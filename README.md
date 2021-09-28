@@ -1,0 +1,2 @@
+# HorizontalCharts
+Javascript charting library
