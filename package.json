@@ -1,0 +1,26 @@
+{
+  "name": "horizontalcharts",
+  "version": "1.0.0",
+  "description": "Horizontal Charts: horizontal JavaScript bar charts",
+  "main": "horizontalcharts.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agbianchessi/HorizontalCharts.git"
+  },
+  "keywords": [
+    "charts",
+    "charting",
+    "horizontal",
+    "horizontal charts",
+    "realtime"
+  ],
+  "author": "Andrea Giovanni Bianchessi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/agbianchessi/HorizontalCharts/issues"
+  },
+  "homepage": "https://github.com/agbianchessi/HorizontalCharts#readme"
+}
