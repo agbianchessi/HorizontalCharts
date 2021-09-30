@@ -123,6 +123,7 @@
 	 */
 	function HorizontalChart(options) {
 		this.seriesSet = [];
+		this.paths = [];
 		this.options = Util.extend({}, HorizontalChart.defaultChartOptions, options);
 	};
 
@@ -132,6 +133,14 @@
 		overSampleFactor: 2,
 		backgroundColor: '#FFFFFF',
 		padding: 5,
+		xAxis: {
+
+		},
+		grid: {
+			color: '#555555',
+			horizontal: true,
+			vertical: true
+		},
 		labels: {
 			enabled: true,
 			fontSize: 12,
@@ -163,6 +172,20 @@
 		this.canvas = canvas;
 		Util.resizeCanvas(canvas, this.options.overSampleFactor);
 		this.render(true);
+		//
+		this.canvas.addEventListener('click', function (e) { //TODO click-->onmouseover
+			var ctx = this.canvas.getContext("2d");
+			//console.log(e.offsetX+" "+e.offsetY);
+			//console.log(e.x+" "+e.y);
+			console.log(e.pageX + " " + e.pageY + " " + this.paths.length);
+			this.paths.forEach(function (path, index) {
+				if (ctx.isPointInStroke(path, e.offsetX * 2, e.offsetY * 2)) {
+					console.log("HIT!" + e.offsetX + " " + e.offsetY + " " + index);
+				}
+
+
+			});
+		}.bind(this));
 	};
 
 	/**
@@ -176,6 +199,7 @@
 	};
 
 	HorizontalChart.prototype.render = function (streaming) {
+		this.paths = [];
 		var millisPerPixel = this.options.millisPerPixel;
 		var maxDataSetLength = this.options.maxDataSetLength;
 		var nSeries = this.seriesSet.length;
@@ -204,6 +228,8 @@
 		ctx.fillRect(0, 0, dimensions.width, dimensions.height);
 		ctx.restore();
 
+		//TODO draw grid ?
+
 		// For each data set...
 		for (var d = 0; d < this.seriesSet.length; d++) {
 			var timeSeries = this.seriesSet[d];
@@ -217,9 +243,7 @@
 				(barPaddedHeight * (position - 1)) +
 				(barPaddedHeight / 2)
 			);
-			// Set style for this dataSet.
-			ctx.lineWidth = timeSeries.options.lineWidth;
-			var firstX = 0, lastX = 0;
+			var firstX = 0, lastX = 0, lastXend = 0;
 			for (var i = 0; i < dataSet.length && dataSet.length !== 1; i++) {
 				var x = dataSet[i].ts;
 				var value = dataSet[i].value;
@@ -230,32 +254,20 @@
 					if (!isNaN(value)) {
 						var lineStart = 0;
 						var lineEnd = value / millisPerPixel;
-						ctx.beginPath();
-						ctx.moveTo(lineStart, yPosition);
-						ctx.lineTo(lineEnd, yPosition);
-						ctx.stroke();
-						ctx.closePath();
+						this.drawBar(yPosition, lineStart, lineEnd, dataSet[i].color, timeSeries.options.lineWidth);
 					}
 				} else {
 					if (isNaN(dataSet[i - 1].value)) {
 						var lineStart = Math.round((lastX - firstX) / millisPerPixel);
+						if(lineStart<lastXend) lineStart = lastXend;
 						var lineEnd = Math.round((x - firstX) / millisPerPixel);
-						ctx.strokeStyle = dataSet[i - 1].color;
-						ctx.beginPath();
-						ctx.moveTo(lineStart, yPosition);
-						ctx.lineTo(lineEnd, yPosition);
-						ctx.stroke();
-						ctx.closePath();
+						this.drawBar(yPosition, lineStart, lineEnd, dataSet[i - 1].color, timeSeries.options.lineWidth);
 					}
 					if (!isNaN(value)) {
 						var lineStart = Math.round((x - firstX) / millisPerPixel);
+						if(lineStart<lastXend) lineStart = lastXend;
 						var lineEnd = Math.round(((x - firstX) + value) / millisPerPixel);
-						ctx.strokeStyle = dataSet[i].color;
-						ctx.beginPath();
-						ctx.moveTo(lineStart, yPosition);
-						ctx.lineTo(lineEnd, yPosition);
-						ctx.stroke();
-						ctx.closePath();
+						this.drawBar(yPosition, lineStart, lineEnd, dataSet[i].color, timeSeries.options.lineWidth);
 					}
 				}
 
@@ -264,6 +276,7 @@
 				timeSeries.dropOldData(oldestValidTime, maxDataSetLength);
 
 				lastX = x;
+				lastXend = lineEnd;
 			}
 
 			// Draw y labels on the chart.
@@ -281,7 +294,6 @@
 				ctx.fillStyle = this.options.labels.fontColor;
 				ctx.fillText(labelString, 3, yPosition);
 			}
-
 		}
 
 		// Periodic render
@@ -293,6 +305,28 @@
 			:
 			null;
 	};
+
+	HorizontalChart.prototype.drawBar = function (y, xStart, xEnd, color, lineWidth) {
+		var ctx = this.canvas.getContext("2d");
+		//vertical grid line/tick
+		ctx.lineWidth = 1;
+		ctx.strokeStyle = this.options.grid.color;
+		ctx.beginPath();
+		ctx.moveTo(xEnd, this.canvas.clientHeight-3);
+		ctx.lineTo(xEnd, this.canvas.clientHeight);
+		ctx.stroke();
+		ctx.closePath();
+		//bar
+		var path = new Path2D();
+		ctx.lineWidth = lineWidth;
+		ctx.strokeStyle = color;
+		ctx.beginPath();
+		path.moveTo(xStart, y);
+		path.lineTo(xEnd, y);
+		ctx.stroke(path);
+		path.closePath();
+		this.paths.push(path);
+	}
 
 	exports.DataSample = DataSample;
 	exports.TimeSeries = TimeSeries;
