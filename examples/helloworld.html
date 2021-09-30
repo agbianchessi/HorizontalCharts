@@ -1,49 +1,52 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>Horizontal Chart example</title>
-		<script type="text/javascript" src="../horizontalcharts.js"></script>
-		<script type="text/javascript">
-			var colors = [ "#FF0000", "#FFFF00", "#00FF00", "#0000FF", "#000000" ];
-			// Randomly add a data point every 1s
-			var ts1 = new TimeSeries( 1 );
-			var ts2 = new TimeSeries( 2 );
-			setInterval(function() {
-				//TimeSeries 1
-				var color = colors[ Math.floor(Math.random() * 5) ];
-				ts1.append( new DataSample( new Date().getTime(), color) );
-				//TimeSeries 2
-				color = colors[ Math.floor(Math.random() * 5) ];
-				ts2.append( new DataSample( new Date().getTime(), color) );
-			}, 1000);
-			function createChart() {
-				var chart = new HorizontalChart();
-				chart.addTimeSeries( ts1 );
-				chart.addTimeSeries( ts2 );
-				chart.streamTo( document.getElementById("chart1") );
-			}
-			//
-			// Randomly add a data point every 5s
-			var ts3 = new TimeSeries( 1 );
-			var ts4 = new TimeSeries( 2 );
-			setInterval(function() {
-				//TimeSeries 3
-				var color = colors[ Math.floor(Math.random() * 5) ];
-				ts3.append( new DataSample( new Date().getTime(), color, Math.random() * 5000 ) );
-				//TimeSeries 4
-				color = colors[ Math.floor(Math.random() * 5) ];
-				ts4.append( new DataSample( new Date().getTime(), color, Math.random() * 5000 ) );
-			}, 5000);
-			function createChart2() {
-				var chart = new HorizontalChart();
-				chart.addTimeSeries( ts3 );
-				chart.addTimeSeries( ts4 );
-				chart.streamTo( document.getElementById("chart2") );
-			}
-		</script>
-	</head>
-	<body onload="createChart();createChart2();">
-		<canvas id="chart1" style="width:100%; border: 1px solid black;"></canvas>
-		<canvas id="chart2" style="width:100%; border: 1px solid black;padding-top:5"></canvas>
-	</body>
+
+<head>
+	<title>Horizontal Chart example</title>
+	<script type="text/javascript" src="../horizontalcharts.js"></script>
+	<script type="text/javascript">
+		var colors = ["#FF0000", "#FFFF00", "#00FF00", "#0000FF", "#000000"];
+		// Randomly add a data point every 1s
+		var ts1 = new TimeSeries(1);
+		var ts2 = new TimeSeries(2);
+		setInterval(function () {
+			//TimeSeries 1
+			var color = colors[Math.floor(Math.random() * 5)];
+			ts1.append(new DataSample(new Date().getTime(), color));
+			//TimeSeries 2
+			color = colors[Math.floor(Math.random() * 5)];
+			ts2.append(new DataSample(new Date().getTime(), color));
+		}, 1000);
+		function createChart() {
+			var chart = new HorizontalChart();
+			chart.addTimeSeries(ts1);
+			chart.addTimeSeries(ts2);
+			chart.streamTo(document.getElementById("chart1"));
+		}
+		//
+		// Randomly add a data point every 5s
+		var ts3 = new TimeSeries(1);
+		var ts4 = new TimeSeries(2);
+		setInterval(function () {
+			//TimeSeries 3
+			var color = colors[Math.floor(Math.random() * 5)];
+			ts3.append(new DataSample(new Date().getTime(), color, Math.random() * 5000));
+			//TimeSeries 4
+			color = colors[Math.floor(Math.random() * 5)];
+			ts4.append(new DataSample(new Date().getTime(), color, Math.random() * 5000));
+		}, 5000);
+		function createChart2() {
+			var chart = new HorizontalChart();
+			chart.addTimeSeries(ts3);
+			chart.addTimeSeries(ts4);
+			chart.streamTo(document.getElementById("chart2"));
+		}
+	</script>
+</head>
+
+<body onload="createChart();createChart2();">
+	<canvas id="chart1" style="width:100%; border: 1px solid black;"></canvas>
+	<canvas id="chart2" style="width:100%; border: 1px solid black;padding-top:5"></canvas>
+</body>
+
 </html>
