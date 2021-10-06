@@ -32,11 +32,12 @@
 	}
 
 	/**
-	 * 
-	 * @param {*} x 
-	 * @param {*} color 
-	 * @param {*} value 
-	 * @constructor
+	 * Initialises a new <code>DataSample</code>.
+	 *
+	 * @constructor 
+	 * @param {number} x - The <code>DataSample</code> position on the abscissa axis. Use </code>NaN</code> to simply stack bars one afther the other. Timestamps are in milliseconds (number of milliseconds since the Unix Epoch). 
+	 * @param {string} color - The <code>DataSample</code> color on the graph.
+	 * @param {number} value - The value of this <code>DataSample</code>.
 	 */
 	function DataSample(x, color, value = Number.NaN) {
 		this.x = typeof x === 'number' ? x : Number.NaN;
@@ -48,9 +49,9 @@
 	/**
 	* Initialises a new <code>TimeSeries</code> with optional data options.
 	*
-	* @param position unique, integer and strictly positive value, it sorts series on the graph from top to bottom
-	* @param options optional <code>TimeSeries</code> options
 	* @constructor
+	* @param {number} position - Unique, integer and strictly positive value, it sorts series on the graph from top to bottom.
+	* @param {Object} options - Optional <code>TimeSeries</code> options.
 	*/
 	function TimeSeries(position, options) {
 		this.position = position;
@@ -68,17 +69,16 @@
 	};
 
 	/**
-	 * Clears all data from this TimeSeries object.
+	 * Clears all data from this <code>TimeSeries</code> object.
 	 */
 	TimeSeries.prototype.clear = function () {
 		this.data = [];
-		//this.bars = [];
 	};
 
 	/**
 	 * Adds a new data point to the <code>TimeSeries</code>, preserving chronological order.
 	 *
-	 * @param dataSample
+	 * @param {DataSample} dataSample - The <code>DataSample</code> to add.
 	 */
 	TimeSeries.prototype.append = function (dataSample) {
 		if (isNaN(dataSample.x)) {
@@ -86,7 +86,7 @@
 			this.data.push(dataSample);
 			return;
 		}
-		// Rewind until we hit an older x (aka timestamp)
+		// Rewind until we hit an older x
 		var i = this.data.length - 1;
 		while (i >= 0 && this.data[i].x > dataSample.x) {
 			i--;
@@ -128,27 +128,32 @@
 	 * Initialises a new <code>HorizontalChart</code>.
 	 *
 	 * @constructor
+	 * @param {Object} options - Optional <code>HorizontalChart</code> options.
 	 */
 	function HorizontalChart(options) {
 		this.seriesSet = [];
-		//this.bars = [];
 		this.options = Util.extend({}, HorizontalChart.defaultChartOptions, options);
 	};
 
 	HorizontalChart.defaultChartOptions = {
-		xUnitsPerPixel: 10,
 		maxDataSetLength: 50,
 		overSampleFactor: 2,
 		backgroundColor: '#FFFFFF',
 		padding: 5,
-		tooltip: true,
 		yFormatter: function (y, precision) {
 			return parseFloat(y).toFixed(precision);
 		},
-		grid: { //TODO xTicks
-			color: '#555555',
-			horizontal: true,
-			vertical: true
+		tooltip: {
+			enabled: true,
+			backgroundColor: '#FFFFFF88'
+		},
+		xAxis: {
+			xUnitsPerPixel: 10,
+			isTime: false
+		},
+		xTicks: {
+			enabled: true,
+			color: '#555555'
 		},
 		labels: {
 			enabled: true,
@@ -165,125 +170,52 @@
 		}
 	};
 
-
-	HorizontalChart.prototype.mousemove = function (evt) {
-		this.mouseover = true;
-		this.mouseX = evt.offsetX;
-		this.mouseY = evt.offsetY;
-		this.mousePageX = evt.pageX;
-		this.mousePageY = evt.pageY;
-		if (!this.options.tooltip) {
-			return;
-		}
-		var el = this.getTooltipEl();
-		el.style.top = Math.round(this.mousePageY) + 'px';
-		el.style.left = Math.round(this.mousePageX) + 'px';
-		this.updateTooltip(evt);
-	};
-
-	HorizontalChart.prototype.mouseout = function () {
-		this.mouseover = false;
-		this.mouseX = this.mouseY = -1;
-		if (this.tooltipEl)
-			this.tooltipEl.style.display = 'none';
-	};
-
-	HorizontalChart.prototype.getTooltipEl = function () {
-		if (!this.tooltipEl) {
-			this.tooltipEl = document.createElement('div');
-			this.tooltipEl.className = 'horizontal-chart-tooltip';
-			this.tooltipEl.style.pointerEvents = 'none';
-			this.tooltipEl.style.position = 'absolute';
-			this.tooltipEl.style.display = 'none';
-			document.body.appendChild(this.tooltipEl);
-		}
-		return this.tooltipEl;
-	};
-
-	HorizontalChart.prototype.updateTooltip = function (evt) {
-		if (!this.options.tooltip) {
-			return;
-		}
-		var el = this.getTooltipEl();
-
-		if (!this.mouseover || !this.options.tooltip) {
-			el.style.display = 'none';
-			return;
-		}
-
-		var ctx = this.canvas.getContext("2d");
-		var osf = this.options.overSampleFactor;
-		var lines = [];
-		this.seriesSet.forEach(function (s, index) {
-			s.data.forEach(function (d, index) {
-				if (d.path2D != null)
-					if (ctx.isPointInStroke(d.path2D, evt.offsetX * osf, evt.offsetY * osf)) {
-						var line = "<span><b>X:</b> " + d.x;
-						lines.push(line);
-						line = "<span><b>Value:</b> " + d.value;
-						lines.push(line);
-					}
-			});
-		});
-
-
-		el.innerHTML = lines.join('<br>');
-		el.style.display = 'block';
+	HorizontalChart.requestAnimationFrame = function (render) {
+		window.requestAnimationFrame(render);
 	};
 
 	/**
 	 * Adds a <code>TimeSeries</code> to this chart.
+	 * 
+	 * @param {TimeSeries} timeSeries - The <code>TimeSeries</code> to add.
 	 */
 	HorizontalChart.prototype.addTimeSeries = function (timeSeries) {
 		this.seriesSet.push(timeSeries);
 	};
 
 	/**
-	 * Instructs the <code>HorizontalChart</code> to start rendering to the provided canvas.
+	 * Instructs the <code>HorizontalChart</code> to start rendering to the provided <code>Canvas</code>.
 	 *
-	 * @param canvas the target canvas element
+	 * @param {Canvas} canvas - The target canvas element.
 	 */
 	HorizontalChart.prototype.streamTo = function (canvas) {
 		this.canvas = canvas;
 		Util.resizeCanvas(canvas, this.options.overSampleFactor);
-		exports.requestAnimationFrame(this.render.bind(this));
-		//
-		this.canvas.addEventListener('click', function (e) { //TODO click-->onmouseover
-			var ctx = this.canvas.getContext("2d");
-			var osf = this.options.overSampleFactor;
-			this.seriesSet.forEach(function (s, index) {
-				s.data.forEach(function (d, index) {
-					if (d.path2D != null)
-						if (ctx.isPointInStroke(d.path2D, e.offsetX * osf, e.offsetY * osf)) {
-							console.log("HIT!" + e.offsetX + " " + e.offsetY + " " + index);
-						}
-				});
-			});
-		}.bind(this));
+		HorizontalChart.requestAnimationFrame((this.render.bind(this)));
 
-		//
-		//this.canvas.addEventListener('click', this.mouseclick.bind(this));
+		// Add mouse listeners
+		this.canvas.addEventListener('click', this.mouseclick.bind(this));
 		this.canvas.addEventListener('mousemove', this.mousemove.bind(this));
 		this.canvas.addEventListener('mouseout', this.mouseout.bind(this));
 	};
 
 	/**
-	 * Instructs the <code>HorizontalChart</code> to draw the chart on the provided canvas.
+	 * Instructs the <code>HorizontalChart</code> to draw the chart on the provided <code>Canvas</code>.
 	 *
-	 * @param canvas the target canvas element
+	 * @param {Canvas} canvas - The target canvas element.
 	 */
 	HorizontalChart.prototype.drawOn = function (canvas) {
 		this.canvas = canvas;
 		this.render();
 
-		//
-		this.canvas.addEventListener('mousemove', this.mousemove);
-		this.canvas.addEventListener('mouseout', this.mouseout);
+		// Add mouse listeners
+		this.canvas.addEventListener('click', this.mouseclick.bind(this));
+		this.canvas.addEventListener('mousemove', this.mousemove.bind(this));
+		this.canvas.addEventListener('mouseout', this.mouseout.bind(this));
 	};
 
 	HorizontalChart.prototype.render = function () {
-		//this.bars = [];
-		var xUnitsPerPixel = this.options.xUnitsPerPixel;
+		var xUnitsPerPixel = this.options.xAxis.xUnitsPerPixel;
 		var maxDataSetLength = this.options.maxDataSetLength;
 		var nSeries = this.seriesSet.length;
 		var ctx = this.canvas.getContext("2d");
@@ -311,7 +243,7 @@
 		ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 		ctx.restore();
 
-		// Draw y labels on the chart.
+		// Compute y labels max width
 		var labelsMaxWidth = 0;
 		var LABEL_PADDING = 4;
 		// For each data set...
@@ -320,12 +252,31 @@
 			if (timeSeries.options.disabled) {
 				continue;
 			}
+			if (this.options.labels.enabled) {
+				ctx.font = "bold " + this.options.labels.fontSize + 'px ' + this.options.labels.fontFamily;
+				var labelString = timeSeries.options.labelText.length > 0
+					? timeSeries.options.labelText
+					: timeSeries.position;
+				var textWidth = Math.ceil(ctx.measureText(labelString).width);
+				if (textWidth > labelsMaxWidth) labelsMaxWidth = textWidth;
+			}
+		}
+
+		// For each data set...
+		for (var d = 0; d < this.seriesSet.length; d++) {
+			var timeSeries = this.seriesSet[d];
+			if (timeSeries.options.disabled) {
+				continue;
+			}
+			var dataSet = timeSeries.data;
 			var position = timeSeries.position;
-			var barPaddedHeight = canvasHeight / nSeries; //TODO rename
+			var barPaddedHeight = canvasHeight / nSeries;
 			var yPosition = Math.round(
 				(barPaddedHeight * (position - 1)) +
 				(barPaddedHeight / 2)
 			);
+
+			// Draw y labels on the chart.
 			if (this.options.labels.enabled) {
 				ctx.font = "bold " + this.options.labels.fontSize + 'px ' + this.options.labels.fontFamily;
 				var labelString = timeSeries.options.labelText.length > 0
@@ -341,21 +292,8 @@
 				ctx.fillStyle = this.options.labels.fontColor;
 				ctx.fillText(labelString, 3, yPosition);
 			}
-		}
 
-		// For each data set...
-		for (var d = 0; d < this.seriesSet.length; d++) {
-			var timeSeries = this.seriesSet[d];
-			if (timeSeries.options.disabled) {
-				continue;
-			}
-			var dataSet = timeSeries.data;
-			var position = timeSeries.position;
-			var barPaddedHeight = canvasHeight / nSeries; //TODO rename
-			var yPosition = Math.round(
-				(barPaddedHeight * (position - 1)) +
-				(barPaddedHeight / 2)
-			);
+			// Draw bars
 			var firstX = 0, lastX = 0, lastXend = 0;
 			for (var i = 0; i < dataSet.length && dataSet.length !== 1; i++) {
 				var x = isNaN(dataSet[i].x) ? lastXend : dataSet[i].x;
@@ -396,16 +334,16 @@
 		}
 
 		// Periodic render
-		exports.requestAnimationFrame(this.render.bind(this));
+		HorizontalChart.requestAnimationFrame((this.render.bind(this)));
 	};
 
 	HorizontalChart.prototype.drawBar = function (y, xStart, xEnd, dataSample, barHeight, labelsMaxWidth) {
 		var ctx = this.canvas.getContext("2d");
 		xStart += labelsMaxWidth * this.options.overSampleFactor;
 		xEnd += labelsMaxWidth * this.options.overSampleFactor;
-		//vertical grid line/tick
+		//vertical ticks
 		ctx.lineWidth = 1;
-		ctx.strokeStyle = this.options.grid.color;
+		ctx.strokeStyle = this.options.xTicks.color;
 		ctx.beginPath();
 		ctx.moveTo(xEnd, this.canvas.clientHeight - 3);
 		ctx.lineTo(xEnd, this.canvas.clientHeight);
@@ -419,8 +357,75 @@
 		bar.lineTo(xEnd, y);
 		ctx.stroke(bar);
 		dataSample.path2D = bar;
-		//this.bars.push(bar);
 	}
+
+	HorizontalChart.prototype.mouseclick = function (evt) {
+		return;
+	};
+
+	HorizontalChart.prototype.mousemove = function (evt) {
+		this.mouseover = true;
+		this.mousePageX = evt.pageX;
+		this.mousePageY = evt.pageY;
+		if (!this.options.tooltip.enabled) {
+			return;
+		}
+		var el = this.getTooltipEl();
+		el.style.top = Math.round(this.mousePageY) + 'px';
+		el.style.left = Math.round(this.mousePageX) + 'px';
+		this.updateTooltip(evt);
+	};
+
+	HorizontalChart.prototype.mouseout = function () {
+		this.mouseover = false;
+		if (this.tooltipEl)
+			this.tooltipEl.style.display = 'none';
+	};
+
+	HorizontalChart.prototype.getTooltipEl = function () {
+		if (!this.tooltipEl) {
+			this.tooltipEl = document.createElement('div');
+			this.tooltipEl.className = 'horizontal-chart-tooltip';
+			this.tooltipEl.style.backgroundColor = this.options.tooltip.backgroundColor;
+			this.tooltipEl.style.border = '0.06em solid black';
+			this.tooltipEl.style.pointerEvents = 'none';
+			this.tooltipEl.style.position = 'absolute';
+			this.tooltipEl.style.display = 'none';
+			document.body.appendChild(this.tooltipEl);
+		}
+		return this.tooltipEl;
+	};
+
+	HorizontalChart.prototype.updateTooltip = function (evt) {
+		var el = this.getTooltipEl();
+		if (!this.mouseover || !this.options.tooltip.enabled) {
+			el.style.display = 'none';
+			return;
+		}
+
+		var ctx = this.canvas.getContext("2d");
+		var osf = this.options.overSampleFactor;
+		var lines = [];
+		this.seriesSet.forEach(function (s, index) {
+			s.data.forEach(function (d, index) {
+				if (d.path2D != null)
+					if (ctx.isPointInStroke(d.path2D, evt.offsetX * osf, evt.offsetY * osf)) {
+						var line = "<span><b>X:</b> " + d.x; //TODO formattare se timestamp xAxis.isTime
+						lines.push(line);
+						line = "<span><b>Value:</b> " + d.value;
+						lines.push(line);
+					}
+			});
+		});
+
+		if (lines.length > 0) {
+			el.innerHTML = lines.join('<br>');
+			el.style.display = 'block';
+		} else {
+			el.innerHTML = "";
+			el.style.display = 'none';
+		}
+	};
 
 	exports.DataSample = DataSample;
 	exports.TimeSeries = TimeSeries;

@@ -33,7 +33,7 @@
 			ts3.append(new DataSample(new Date().getTime(), color, 2000));
 			//TimeSeries 4
 			color = colors[Math.floor(Math.random() * 5)];
-			ts4.append(new DataSample(new Date().getTime(), color, Math.random() * 10000));
+			ts4.append(new DataSample(new Date().getTime(), color, (Math.random() * 10000).toFixed(2)));
 		}, 5000);
 		function createChart2() {
 			var chart = new HorizontalChart();
@@ -48,10 +48,10 @@
 		setInterval(function () {
 			//TimeSeries 5
 			var color = colors[Math.floor(Math.random() * 5)];
-			ts5.append(new DataSample(Number.NaN, color, Math.random() * 3000));
+			ts5.append(new DataSample(Number.NaN, color, (Math.random() * 3000).toFixed(2)));
 			//TimeSeries 6
 			color = colors[Math.floor(Math.random() * 5)];
-			ts6.append(new DataSample(Number.NaN, color, Math.random() * 10000));
+			ts6.append(new DataSample(Number.NaN, color, (Math.random() * 10000).toFixed(2)));
 		}, 5000);
 		function createChart3() {
 			var chart = new HorizontalChart();
