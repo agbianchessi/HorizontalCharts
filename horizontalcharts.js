@@ -37,7 +37,7 @@
 	 * @constructor 
 	 * @param {number} x - The <code>DataSample</code> position on the abscissa axis. Use </code>NaN</code> to simply stack bars one afther the other. Timestamps are in milliseconds (number of milliseconds since the Unix Epoch). 
 	 * @param {string} color - The <code>DataSample</code> color on the graph.
-	 * @param {number} value - The value of this <code>DataSample</code>.
+	 * @param {number} value - Optional parameter. The value of this <code>DataSample</code>.
 	 */
 	function DataSample(x, color, value = Number.NaN) {
 		this.x = typeof x === 'number' ? x : Number.NaN;
@@ -60,7 +60,7 @@
 	};
 
 	TimeSeries.defaultOptions = {
-		barHeight: 20, //px
+		barHeight: 20,
 		minBarLength: 5,
 		mergeIfSameColor: false, //TODO
 		labelText: "",
@@ -140,8 +140,12 @@
 		overSampleFactor: 2,
 		backgroundColor: '#FFFFFF',
 		padding: 5,
-		yFormatter: function (y, precision) {
-			return parseFloat(y).toFixed(precision);
+		formatTime: function (ms) {
+			function pad2(number) { return (number < 10 ? '0' : '') + number }
+			function pad3(number) { if (number < 10) return '00' + number; if (number < 100) return '0' + number; return number; }
+			var date = new Date(ms);
+			var msStr = (pad3(ms - Math.floor(ms / 1000) * 1000) / 1000);
+			return date.toLocaleString('en-US', { hour12: false }) + msStr;
 		},
 		tooltip: {
 			enabled: true,
@@ -149,10 +153,8 @@
 		},
 		xAxis: {
 			xUnitsPerPixel: 10,
-			isTime: false
-		},
-		xTicks: {
-			enabled: true,
+			isTime: true,
+			ticksEnabled: true,
 			color: '#555555'
 		},
 		labels: {
@@ -342,12 +344,14 @@
 		xStart += labelsMaxWidth * this.options.overSampleFactor;
 		xEnd += labelsMaxWidth * this.options.overSampleFactor;
 		//vertical ticks
-		ctx.lineWidth = 1;
-		ctx.strokeStyle = this.options.xTicks.color;
-		ctx.beginPath();
-		ctx.moveTo(xEnd, this.canvas.clientHeight - 3);
-		ctx.lineTo(xEnd, this.canvas.clientHeight);
-		ctx.stroke();
+		if (this.options.xAxis.ticksEnabled) {
+			ctx.lineWidth = 1;
+			ctx.strokeStyle = this.options.xAxis.color;
+			ctx.beginPath();
+			ctx.moveTo(xEnd, this.canvas.clientHeight - 3);
+			ctx.lineTo(xEnd, this.canvas.clientHeight);
+			ctx.stroke();
+		}
 		//bar
 		var bar = new Path2D();
 		ctx.lineWidth = barHeight;
@@ -406,17 +410,19 @@
 		var ctx = this.canvas.getContext("2d");
 		var osf = this.options.overSampleFactor;
 		var lines = [];
-		this.seriesSet.forEach(function (s, index) {
-			s.data.forEach(function (d, index) {
+		for (var i = 0; i < this.seriesSet.length; i++) {
+			var s = this.seriesSet[i];
+			for (var j = 0; j < s.data.length; j++) {
+				var d = s.data[j];
 				if (d.path2D != null)
 					if (ctx.isPointInStroke(d.path2D, evt.offsetX * osf, evt.offsetY * osf)) {
-						var line = "<span><b>X:</b> " + d.x; //TODO formattare se timestamp xAxis.isTime
+						var line = "<span><b>X:</b> " + (this.options.xAxis.isTime ? this.options.formatTime(d.x) : d.x);
 						lines.push(line);
 						line = "<span><b>Value:</b> " + d.value;
 						lines.push(line);
 					}
-			});
-		});
+			}
+		}
 
 		if (lines.length > 0) {
 			el.innerHTML = lines.join('<br>');
