@@ -34,15 +34,16 @@
 	/**
 	 * Initialises a new <code>DataSample</code>.
 	 *
-	 * @constructor 
-	 * @param {number} x - The <code>DataSample</code> position on the abscissa axis. Use </code>NaN</code> to simply stack bars one afther the other. Timestamps are in milliseconds (number of milliseconds since the Unix Epoch). 
-	 * @param {string} color - The <code>DataSample</code> color on the graph.
-	 * @param {number} value - Optional parameter. The value of this <code>DataSample</code>.
+	 * @constructor
+	 * @param {Object} data - An object with <code>DataSample</code> data.
+	 * @param {number} data.x - The <code>DataSample</code> position on the abscissa axis. Use </code>NaN</code> to simply stack bars one afther the other. Timestamps are in milliseconds (number of milliseconds since the Unix Epoch). 
+	 * @param {string} data.color - The <code>DataSample</code> color on the graph.
+	 * @param {number} data.value - Optional parameter. The value of this <code>DataSample</code>.
 	 */
-	function DataSample(x, color, value = Number.NaN) {
-		this.x = typeof x === 'number' ? x : Number.NaN;
-		this.color = typeof color === 'string' ? color : '#FF0000';
-		this.value = typeof value === 'number' ? value : Number.NaN;
+	function DataSample(data) {
+		this.x = typeof data.x === 'number' ? data.x : Number.NaN;
+		this.color = typeof data.color === 'string' ? data.color : '#FF0000';
+		this.value = typeof data.value === 'number' ? data.value : Number.NaN;
 		this.path2D = null;
 	}
 
@@ -61,8 +62,8 @@
 
 	TimeSeries.defaultOptions = {
 		barHeight: 20,
+		showValues: true,
 		minBarLength: 5,
-		mergeIfSameColor: false, //TODO
 		labelText: "",
 		replaceValue: false, //if <code>x</code> has an exact match in the series, this flag controls whether it is replaced, or not (defaults to false)
 		disabled: false //this flag controls wheter this timeseries is displayed or not
@@ -130,15 +131,16 @@
 	 * @constructor
 	 * @param {Object} options - Optional <code>HorizontalChart</code> options.
 	 */
-	function HorizontalChart(options) {
+	function HorizontalChart(options, isRealTime = false) {
 		this.seriesSet = [];
+		this.isRealTime = isRealTime;  //TODO scalare su tutta la lunghezza del canvas se non è realtime
 		this.options = Util.extend({}, HorizontalChart.defaultChartOptions, options);
 	};
 
 	HorizontalChart.defaultChartOptions = {
 		maxDataSetLength: 50,
-		overSampleFactor: 2,
-		backgroundColor: '#FFFFFF',
+		overSampleFactor: 3,
+		backgroundColor: '#00000000',
 		padding: 5,
 		formatTime: function (ms) {
 			function pad2(number) { return (number < 10 ? '0' : '') + number }
@@ -155,25 +157,19 @@
 			xUnitsPerPixel: 10,
 			isTime: true,
 			ticksEnabled: true,
-			color: '#555555'
+			xLabel: "",
+			fontSize: 12,
+			fontFamily: 'monospace',
+			fontColor: '#000000',
+			color: '#000000'
 		},
-		labels: {
+		yLabels: {
 			enabled: true,
 			fontSize: 12,
 			fontFamily: 'monospace',
 			fontColor: '#000000',
 			backgroundColor: '#FFFFFF00'
-		},
-		colors: {
-			go: '#00FF00',
-			stop: '#FF0000',
-			clear: '#FFFF00',
-			off: '#000000'
 		}
-	};
-
-	HorizontalChart.requestAnimationFrame = function (render) {
-		window.requestAnimationFrame(render);
 	};
 
 	/**
@@ -192,24 +188,7 @@
 	 */
 	HorizontalChart.prototype.streamTo = function (canvas) {
 		this.canvas = canvas;
-		Util.resizeCanvas(canvas, this.options.overSampleFactor);
-		HorizontalChart.requestAnimationFrame((this.render.bind(this)));
-
-		// Add mouse listeners
-		this.canvas.addEventListener('click', this.mouseclick.bind(this));
-		this.canvas.addEventListener('mousemove', this.mousemove.bind(this));
-		this.canvas.addEventListener('mouseout', this.mouseout.bind(this));
-	};
-
-	/**
-	 * Instructs the <code>HorizontalChart</code> to draw the chart on the provided <code>Canvas</code>.
-	 *
-	 * @param {Canvas} canvas - The target canvas element.
-	 */
-	HorizontalChart.prototype.drawOn = function (canvas) {
-		this.canvas = canvas;
 		this.render();
-
 		// Add mouse listeners
 		this.canvas.addEventListener('click', this.mouseclick.bind(this));
 		this.canvas.addEventListener('mousemove', this.mousemove.bind(this));
@@ -230,13 +209,18 @@
 			return ++prevValue;
 		}, 0);
 		canvasHeight += (seriesCount + 1) * this.options.padding;
-		var canvasWidth = this.canvas.width;
+		//X Axis labels space
+		var xLabelSpace = 0;
+		if (typeof this.options.xAxis.xLabel === "string" && this.options.xAxis.xLabel.length > 0) {
+			xLabelSpace = this.options.xAxis.fontSize + 5;
+			canvasHeight += xLabelSpace;
+		}
 
 		this.canvas.style.height = canvasHeight + "px";
 		this.canvas.height = canvasHeight;
-
 		// Resize canvas
 		Util.resizeCanvas(this.canvas, this.options.overSampleFactor);
+		var canvasWidth = this.canvas.width;
 
 		// Clear the working area.
 		ctx.save();
@@ -247,15 +231,14 @@
 
 		// Compute y labels max width
 		var labelsMaxWidth = 0;
-		var LABEL_PADDING = 4;
 		// For each data set...
 		for (var d = 0; d < this.seriesSet.length; d++) {
 			var timeSeries = this.seriesSet[d];
 			if (timeSeries.options.disabled) {
 				continue;
 			}
-			if (this.options.labels.enabled) {
-				ctx.font = "bold " + this.options.labels.fontSize + 'px ' + this.options.labels.fontFamily;
+			if (this.options.yLabels.enabled) {
+				ctx.font = "bold " + this.options.yLabels.fontSize + 'px ' + this.options.yLabels.fontFamily;
 				var labelString = timeSeries.options.labelText.length > 0
 					? timeSeries.options.labelText
 					: timeSeries.position;
@@ -264,57 +247,68 @@
 			}
 		}
 
-		// For each data set...
+		//X Y Axis
+		ctx.lineJoin = "round";
+		ctx.lineWidth = 2;
+		ctx.strokeStyle = this.options.xAxis.color;
+		ctx.moveTo(canvasWidth / this.options.overSampleFactor, this.canvas.clientHeight - xLabelSpace);
+		ctx.lineTo(labelsMaxWidth * this.options.overSampleFactor - 2, this.canvas.clientHeight - xLabelSpace);
+		ctx.lineTo(labelsMaxWidth * this.options.overSampleFactor - 2, 0);
+		ctx.stroke();
+
+		// X Axis label
+		if(xLabelSpace>0){
+			ctx.fillStyle = this.options.xAxis.fontColor;
+			ctx.font = "bold " + this.options.xAxis.fontSize + 'px ' + this.options.xAxis.fontFamily;
+			ctx.fillText("X Axis", 3, this.canvas.clientHeight - xLabelSpace / 2);
+		}
+		// Y Axis label, for each data set...
 		for (var d = 0; d < this.seriesSet.length; d++) {
 			var timeSeries = this.seriesSet[d];
 			if (timeSeries.options.disabled) {
 				continue;
 			}
+			ctx.fillStyle = this.options.yLabels.fontColor;
+			ctx.font = "bold " + this.options.yLabels.fontSize + 'px ' + this.options.yLabels.fontFamily;
 			var dataSet = timeSeries.data;
 			var position = timeSeries.position;
-			var barPaddedHeight = canvasHeight / nSeries;
+			var barPaddedHeight = (canvasHeight - xLabelSpace) / nSeries;
 			var yPosition = Math.round(
 				(barPaddedHeight * (position - 1)) +
 				(barPaddedHeight / 2)
 			);
 
 			// Draw y labels on the chart.
-			if (this.options.labels.enabled) {
-				ctx.font = "bold " + this.options.labels.fontSize + 'px ' + this.options.labels.fontFamily;
+			if (this.options.yLabels.enabled) {
 				var labelString = timeSeries.options.labelText.length > 0
 					? timeSeries.options.labelText
 					: timeSeries.position;
 				var textWidth = Math.ceil(ctx.measureText(labelString).width);
-				var textHeight = this.options.labels.fontSize;
+				var textHeight = this.options.yLabels.fontSize;
 				if (textWidth > labelsMaxWidth) labelsMaxWidth = textWidth;
-				// Label's background
-				ctx.fillStyle = this.options.labels.backgroundColor;
-				ctx.fillRect(1, yPosition - textHeight + (LABEL_PADDING / 2), textWidth + LABEL_PADDING, textHeight + LABEL_PADDING);
 				// Label's text
-				ctx.fillStyle = this.options.labels.fontColor;
+				ctx.fillStyle = this.options.yLabels.fontColor;
 				ctx.fillText(labelString, 3, yPosition);
 			}
 
 			// Draw bars
 			var firstX = 0, lastX = 0, lastXend = 0;
-			for (var i = 0; i < dataSet.length && dataSet.length !== 1; i++) {
+			for (var i = 0; i < dataSet.length; i++) {
 				var x = isNaN(dataSet[i].x) ? lastXend : dataSet[i].x;
 				var value = dataSet[i].value;
-				//set bar style.
-				ctx.setLineDash([]); //TODO
 				if (i === 0) {
 					firstX = x;
 					if (!isNaN(value)) {
 						var lineStart = 0;
 						var lineEnd = value / xUnitsPerPixel;
-						this.drawBar(yPosition, lineStart, lineEnd, dataSet[i], timeSeries.options.barHeight, labelsMaxWidth);
+						this.drawBar(yPosition, lineStart, lineEnd, dataSet[i], timeSeries.options, labelsMaxWidth);
 					}
 				} else {
-					if (isNaN(dataSet[i - 1].value)) {
+					if (dataSet.length !== 1 && isNaN(dataSet[i - 1].value)) {
 						var lineStart = Math.round((lastX - firstX) / xUnitsPerPixel);
 						//if (lineStart < lastXend) lineStart = lastXend;
 						var lineEnd = Math.round((x - firstX) / xUnitsPerPixel);
-						this.drawBar(yPosition, lineStart, lineEnd, dataSet[i - 1], timeSeries.options.barHeight, labelsMaxWidth);
+						this.drawBar(yPosition, lineStart, lineEnd, dataSet[i - 1], timeSeries.options, labelsMaxWidth);
 					}
 					if (!isNaN(value)) {
 						var lineStart = Math.round((x - firstX) / xUnitsPerPixel);
@@ -322,30 +316,32 @@
 						if (isNaN(dataSet[i].x)) lineStart = lastXend;
 						//var lineEnd = Math.round(((x - firstX) + value) / xUnitsPerPixel);
 						var lineEnd = Math.round(lineStart + (value / xUnitsPerPixel));
-						this.drawBar(yPosition, lineStart, lineEnd, dataSet[i], timeSeries.options.barHeight, labelsMaxWidth);
+						this.drawBar(yPosition, lineStart, lineEnd, dataSet[i], timeSeries.options, labelsMaxWidth);
 					}
 				}
 
 				// Delete old data that's moved off the left of the chart.
-				var oldestValidX = Math.ceil(x - (canvasWidth * (xUnitsPerPixel / this.options.overSampleFactor)));
-				timeSeries.dropOldData(oldestValidX, maxDataSetLength);
-
+				if (dataSet.length !== 1) {
+					var oldestValidX = Math.ceil(x - (canvasWidth * (xUnitsPerPixel / this.options.overSampleFactor)));
+					timeSeries.dropOldData(oldestValidX, maxDataSetLength);
+				}
 				lastX = x;
 				lastXend = lineEnd;
 			}
 		}
-
 		// Periodic render
-		HorizontalChart.requestAnimationFrame((this.render.bind(this)));
+		if (this.isRealTime)
+			window.requestAnimationFrame((this.render.bind(this)));
 	};
 
-	HorizontalChart.prototype.drawBar = function (y, xStart, xEnd, dataSample, barHeight, labelsMaxWidth) {
+	HorizontalChart.prototype.drawBar = function (y, xStart, xEnd, dataSample, tsOptions, labelsMaxWidth) {
 		var ctx = this.canvas.getContext("2d");
-		xStart += labelsMaxWidth * this.options.overSampleFactor;
-		xEnd += labelsMaxWidth * this.options.overSampleFactor;
-		//vertical ticks
+		var overSampleFactor = this.options.overSampleFactor;
+		xStart += labelsMaxWidth * overSampleFactor;
+		xEnd += labelsMaxWidth * overSampleFactor;
+		//vertical ticks //TODO è il posto giusto? quali metto? fine, inizio, ?
 		if (this.options.xAxis.ticksEnabled) {
-			ctx.lineWidth = 1;
+			ctx.lineWidth = 2;
 			ctx.strokeStyle = this.options.xAxis.color;
 			ctx.beginPath();
 			ctx.moveTo(xEnd, this.canvas.clientHeight - 3);
@@ -354,13 +350,27 @@
 		}
 		//bar
 		var bar = new Path2D();
-		ctx.lineWidth = barHeight;
+		ctx.lineWidth = tsOptions.barHeight;
 		ctx.strokeStyle = dataSample.color;
 		ctx.beginPath();
 		bar.moveTo(xStart, y);
 		bar.lineTo(xEnd, y);
 		ctx.stroke(bar);
 		dataSample.path2D = bar;
+		//Print value
+		if (tsOptions.showValues && !isNaN(dataSample.value)) {
+			var fontSize = (tsOptions.barHeight - 2 > 0 ? tsOptions.barHeight - 2 : 0);
+			ctx.font = 'bold ' + fontSize + 'px ' + 'monospace';
+			var valueString = dataSample.value + "";
+			var textWidth = Math.ceil(ctx.measureText(valueString).width);
+			if (textWidth < xEnd - xStart && fontSize > 0) {
+				ctx.lineWidth = 1;
+				ctx.fillStyle = "#FFFFFF";
+				ctx.strokeStyle = 'black';
+				ctx.fillText(valueString, Math.round(xStart + ((xEnd - xStart) / 2) - (textWidth / 2)), y + Math.floor((fontSize / 2)));
+				ctx.strokeText(valueString, Math.round(xStart + ((xEnd - xStart) / 2) - (textWidth / 2)), y + Math.floor((fontSize / 2)));
+			}
+		}
 	}
 
 	HorizontalChart.prototype.mouseclick = function (evt) {
@@ -406,7 +416,6 @@
 			el.style.display = 'none';
 			return;
 		}
-
 		var ctx = this.canvas.getContext("2d");
 		var osf = this.options.overSampleFactor;
 		var lines = [];
@@ -423,7 +432,6 @@
 					}
 			}
 		}
-
 		if (lines.length > 0) {
 			el.innerHTML = lines.join('<br>');
 			el.style.display = 'block';
