@@ -1,3 +1,10 @@
+/**
+ * (c) 2021 Andrea Giovanni Bianchessi
+ * MIT Licensed
+ * For all details and documentation:
+ * https://github.com/agbianchessi/HorizontalCharts
+ */
+
 ; (function (exports) {
 	'use strict';
 
@@ -61,7 +68,7 @@
 	};
 
 	TimeSeries.defaultOptions = {
-		barHeight: 20,
+		barHeight: 22,
 		showValues: true,
 		minBarLength: 5,
 		labelText: "",
@@ -151,10 +158,12 @@
 		},
 		tooltip: {
 			enabled: true,
-			backgroundColor: '#FFFFFF88'
+			backgroundColor: '#FFFFFFDD'
 		},
 		xAxis: {
 			xUnitsPerPixel: 10,
+			min: 0,
+			max: 110,
 			isTime: true,
 			ticksEnabled: true,
 			xLabel: "",
@@ -187,6 +196,16 @@
 	 * @param {Canvas} canvas - The target canvas element.
 	 */
 	HorizontalChart.prototype.streamTo = function (canvas) {
+		// DataSet check
+		var xDataOk = this.seriesSet.every(s => s.data.every(
+			(d, i, arr) => i == 0 ? true : isNaN(arr[i].x) === isNaN(arr[i - 1].x)
+		));
+		var valDataOk = this.seriesSet.every(s => s.data.every(
+			(d, i, arr) => i == 0 ? true : isNaN(arr[i].value) === isNaN(arr[i - 1].value)
+		));
+		if (!xDataOk || !valDataOk)
+			throw new Error('Invalid DataSet!');
+		// Render on Canvas
 		this.canvas = canvas;
 		this.render();
 		// Add mouse listeners
@@ -197,6 +216,8 @@
 
 	HorizontalChart.prototype.render = function () {
 		var xUnitsPerPixel = this.options.xAxis.xUnitsPerPixel;
+		var xMin = this.options.xAxis.min;
+		var xMax = this.options.xAxis.max;
 		var maxDataSetLength = this.options.maxDataSetLength;
 		var nSeries = this.seriesSet.length;
 		var ctx = this.canvas.getContext("2d");
@@ -221,6 +242,7 @@
 		// Resize canvas
 		Util.resizeCanvas(this.canvas, this.options.overSampleFactor);
 		var canvasWidth = this.canvas.width;
+		var xScale = canvasWidth / (this.options.overSampleFactor * xMax); // For isRealTime=false only
 
 		// Clear the working area.
 		ctx.save();
@@ -257,12 +279,17 @@
 		ctx.stroke();
 
 		// X Axis label
-		if(xLabelSpace>0){
+		if (xLabelSpace > 0) {
+			var labelText = this.options.xAxis.xLabel;
+			var textWidth = Math.ceil(ctx.measureText(labelText).width);
 			ctx.fillStyle = this.options.xAxis.fontColor;
 			ctx.font = "bold " + this.options.xAxis.fontSize + 'px ' + this.options.xAxis.fontFamily;
-			ctx.fillText("X Axis", 3, this.canvas.clientHeight - xLabelSpace / 2);
+			ctx.fillText(labelText,
+				canvasWidth / (2 * this.options.overSampleFactor) - textWidth / 2,
+				this.canvas.clientHeight - xLabelSpace / 2 + this.options.xAxis.fontSize / 2
+			);
 		}
-		// Y Axis label, for each data set...
+		// Y Axis labels and bars, for each data set...
 		for (var d = 0; d < this.seriesSet.length; d++) {
 			var timeSeries = this.seriesSet[d];
 			if (timeSeries.options.disabled) {
@@ -273,11 +300,8 @@
 			var dataSet = timeSeries.data;
 			var position = timeSeries.position;
 			var barPaddedHeight = (canvasHeight - xLabelSpace) / nSeries;
-			var yPosition = Math.round(
-				(barPaddedHeight * (position - 1)) +
-				(barPaddedHeight / 2)
-			);
-
+			var yBarPosition = Math.round(barPaddedHeight * (position - 1) + this.options.padding / 2);
+			var yCenteredPosition = Math.round(barPaddedHeight * (position - 1) + (barPaddedHeight / 2));
 			// Draw y labels on the chart.
 			if (this.options.yLabels.enabled) {
 				var labelString = timeSeries.options.labelText.length > 0
@@ -288,7 +312,7 @@
 				if (textWidth > labelsMaxWidth) labelsMaxWidth = textWidth;
 				// Label's text
 				ctx.fillStyle = this.options.yLabels.fontColor;
-				ctx.fillText(labelString, 3, yPosition);
+				ctx.fillText(labelString, 3, yCenteredPosition);
 			}
 
 			// Draw bars
@@ -299,24 +323,29 @@
 				if (i === 0) {
 					firstX = x;
 					if (!isNaN(value)) {
-						var lineStart = 0;
-						var lineEnd = value / xUnitsPerPixel;
-						this.drawBar(yPosition, lineStart, lineEnd, dataSet[i], timeSeries.options, labelsMaxWidth);
+						var lineStart = 0 + labelsMaxWidth * this.options.overSampleFactor;
+						var lineEnd = value / xUnitsPerPixel + labelsMaxWidth * this.options.overSampleFactor;
+						if (!this.isRealTime) lineEnd = Math.round(value * xScale) + labelsMaxWidth * this.options.overSampleFactor;
+						this.drawBar(yBarPosition, yCenteredPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 					}
 				} else {
 					if (dataSet.length !== 1 && isNaN(dataSet[i - 1].value)) {
-						var lineStart = Math.round((lastX - firstX) / xUnitsPerPixel);
+						var lineStart = Math.round((lastX - firstX) / xUnitsPerPixel) + labelsMaxWidth * this.options.overSampleFactor;
+						if (!this.isRealTime) lineStart = Math.round((lastX - firstX) * xScale);
 						//if (lineStart < lastXend) lineStart = lastXend;
-						var lineEnd = Math.round((x - firstX) / xUnitsPerPixel);
-						this.drawBar(yPosition, lineStart, lineEnd, dataSet[i - 1], timeSeries.options, labelsMaxWidth);
+						var lineEnd = Math.round((x - firstX) / xUnitsPerPixel) + labelsMaxWidth * this.options.overSampleFactor;
+						if (!this.isRealTime) lineEnd = Math.round((x - firstX) * xScale) + labelsMaxWidth * this.options.overSampleFactor;
+						this.drawBar(yBarPosition, yCenteredPosition, lineStart, lineEnd, dataSet[i - 1], timeSeries.options);
 					}
 					if (!isNaN(value)) {
-						var lineStart = Math.round((x - firstX) / xUnitsPerPixel);
+						var lineStart = Math.round((x - firstX) / xUnitsPerPixel) + labelsMaxWidth * this.options.overSampleFactor;
+						if (!this.isRealTime) lineStart = Math.round((x - firstX) * xScale);
 						if (lineStart < lastXend) lineStart = lastXend;
 						if (isNaN(dataSet[i].x)) lineStart = lastXend;
 						//var lineEnd = Math.round(((x - firstX) + value) / xUnitsPerPixel);
-						var lineEnd = Math.round(lineStart + (value / xUnitsPerPixel));
-						this.drawBar(yPosition, lineStart, lineEnd, dataSet[i], timeSeries.options, labelsMaxWidth);
+						var lineEnd = Math.round(lineStart + (value / xUnitsPerPixel)) + labelsMaxWidth * this.options.overSampleFactor;
+						if (!this.isRealTime) lineEnd = Math.round(lineStart + (value * xScale)) + labelsMaxWidth * this.options.overSampleFactor;
+						this.drawBar(yBarPosition, yCenteredPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 					}
 				}
 
@@ -330,45 +359,29 @@
 			}
 		}
 		// Periodic render
-		if (this.isRealTime)
-			window.requestAnimationFrame((this.render.bind(this)));
+		window.requestAnimationFrame((this.render.bind(this)));
 	};
 
-	HorizontalChart.prototype.drawBar = function (y, xStart, xEnd, dataSample, tsOptions, labelsMaxWidth) {
+	HorizontalChart.prototype.drawBar = function (y, yCentered, xStart, xEnd, dataSample, tsOptions) {
 		var ctx = this.canvas.getContext("2d");
-		var overSampleFactor = this.options.overSampleFactor;
-		xStart += labelsMaxWidth * overSampleFactor;
-		xEnd += labelsMaxWidth * overSampleFactor;
-		//vertical ticks //TODO è il posto giusto? quali metto? fine, inizio, ?
-		if (this.options.xAxis.ticksEnabled) {
-			ctx.lineWidth = 2;
-			ctx.strokeStyle = this.options.xAxis.color;
-			ctx.beginPath();
-			ctx.moveTo(xEnd, this.canvas.clientHeight - 3);
-			ctx.lineTo(xEnd, this.canvas.clientHeight);
-			ctx.stroke();
-		}
 		//bar
 		var bar = new Path2D();
-		ctx.lineWidth = tsOptions.barHeight;
-		ctx.strokeStyle = dataSample.color;
-		ctx.beginPath();
-		bar.moveTo(xStart, y);
-		bar.lineTo(xEnd, y);
-		ctx.stroke(bar);
+		ctx.fillStyle = dataSample.color;
+		bar.rect(xStart, y, xEnd - xStart, tsOptions.barHeight);
+		ctx.fill(bar);
 		dataSample.path2D = bar;
 		//Print value
 		if (tsOptions.showValues && !isNaN(dataSample.value)) {
-			var fontSize = (tsOptions.barHeight - 2 > 0 ? tsOptions.barHeight - 2 : 0);
+			var fontSize = (tsOptions.barHeight - 4 > 0 ? tsOptions.barHeight - 4 : 0);
 			ctx.font = 'bold ' + fontSize + 'px ' + 'monospace';
-			var valueString = dataSample.value + "";
+			var valueString = dataSample.value + "jyMTèg";
 			var textWidth = Math.ceil(ctx.measureText(valueString).width);
 			if (textWidth < xEnd - xStart && fontSize > 0) {
 				ctx.lineWidth = 1;
 				ctx.fillStyle = "#FFFFFF";
 				ctx.strokeStyle = 'black';
-				ctx.fillText(valueString, Math.round(xStart + ((xEnd - xStart) / 2) - (textWidth / 2)), y + Math.floor((fontSize / 2)));
-				ctx.strokeText(valueString, Math.round(xStart + ((xEnd - xStart) / 2) - (textWidth / 2)), y + Math.floor((fontSize / 2)));
+				ctx.fillText(valueString, Math.round(xStart + ((xEnd - xStart) / 2) - (textWidth / 2)), y + fontSize);
+				ctx.strokeText(valueString, Math.round(xStart + ((xEnd - xStart) / 2) - (textWidth / 2)), y + fontSize);
 			}
 		}
 	}
@@ -423,13 +436,14 @@
 			var s = this.seriesSet[i];
 			for (var j = 0; j < s.data.length; j++) {
 				var d = s.data[j];
-				if (d.path2D != null)
-					if (ctx.isPointInStroke(d.path2D, evt.offsetX * osf, evt.offsetY * osf)) {
+				if (d.path2D != null) {
+					if (ctx.isPointInPath(d.path2D, evt.offsetX * osf, evt.offsetY * osf)) {
 						var line = "<span><b>X:</b> " + (this.options.xAxis.isTime ? this.options.formatTime(d.x) : d.x);
 						lines.push(line);
 						line = "<span><b>Value:</b> " + d.value;
 						lines.push(line);
 					}
+				}
 			}
 		}
 		if (lines.length > 0) {
