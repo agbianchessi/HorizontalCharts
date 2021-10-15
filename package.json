@@ -1,8 +1,10 @@
 {
   "name": "horizontalcharts",
   "version": "1.0.0",
+  "author": "Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com> (https://github.com/agbianchessi)",
   "description": "Horizontal Charts: horizontal JavaScript bar charts",
   "main": "horizontalcharts.js",
+  "dependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -15,9 +17,10 @@
     "charting",
     "horizontal",
     "horizontal charts",
-    "realtime"
+    "realtime",
+    "bar",
+    "bar charts"
   ],
-  "author": "Andrea Giovanni Bianchessi",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/agbianchessi/HorizontalCharts/issues"

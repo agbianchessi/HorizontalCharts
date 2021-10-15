@@ -46,11 +46,13 @@
 	 * @param {number} data.x - The <code>DataSample</code> position on the abscissa axis. Use </code>NaN</code> to simply stack bars one afther the other. Timestamps are in milliseconds (number of milliseconds since the Unix Epoch). 
 	 * @param {string} data.color - The <code>DataSample</code> color on the graph.
 	 * @param {number} data.value - Optional parameter. The value of this <code>DataSample</code>.
+	 * @param {string} data.desc - Optional parameter. A text describing this <code>DataSample</code>, it will be shown in the tooltip.
 	 */
 	function DataSample(data) {
 		this.x = typeof data.x === 'number' ? data.x : Number.NaN;
 		this.color = typeof data.color === 'string' ? data.color : '#FF0000';
 		this.value = typeof data.value === 'number' ? data.value : Number.NaN;
+		this.desc = typeof data.desc === 'string' ? data.desc : '';
 		this.path2D = null;
 	}
 
@@ -140,7 +142,7 @@
 	 */
 	function HorizontalChart(options, isRealTime = false) {
 		this.seriesSet = [];
-		this.isRealTime = isRealTime;  //TODO scalare su tutta la lunghezza del canvas se non è realtime
+		this.isRealTime = isRealTime;
 		this.options = Util.extend({}, HorizontalChart.defaultChartOptions, options);
 	};
 
@@ -374,7 +376,7 @@
 		if (tsOptions.showValues && !isNaN(dataSample.value)) {
 			var fontSize = (tsOptions.barHeight - 4 > 0 ? tsOptions.barHeight - 4 : 0);
 			ctx.font = 'bold ' + fontSize + 'px ' + 'monospace';
-			var valueString = dataSample.value + "jyMTèg";
+			var valueString = dataSample.value;
 			var textWidth = Math.ceil(ctx.measureText(valueString).width);
 			if (textWidth < xEnd - xStart && fontSize > 0) {
 				ctx.lineWidth = 1;
@@ -438,10 +440,19 @@
 				var d = s.data[j];
 				if (d.path2D != null) {
 					if (ctx.isPointInPath(d.path2D, evt.offsetX * osf, evt.offsetY * osf)) {
-						var line = "<span><b>X:</b> " + (this.options.xAxis.isTime ? this.options.formatTime(d.x) : d.x);
-						lines.push(line);
-						line = "<span><b>Value:</b> " + d.value;
-						lines.push(line);
+						var line = "";
+						if (d.desc.length > 0) {
+							line = "<span><b>" + d.text + "</b></span>";
+							lines.push(line);
+						}
+						if (!isNaN(d.x)) {
+							line = "<span><b>X:</b> " + (this.options.xAxis.isTime ? this.options.formatTime(d.x) : d.x) + "</span>";
+							lines.push(line);
+						}
+						if (!isNaN(d.value)) {
+							line = "<span><b>Value:</b> " + d.value + "</span>";
+							lines.push(line);
+						}
 					}
 				}
 			}
