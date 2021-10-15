@@ -158,6 +158,7 @@
 			var msStr = (pad3(ms - Math.floor(ms / 1000) * 1000) / 1000);
 			return date.toLocaleString('en-US', { hour12: false }) + msStr;
 		},
+		axisWidth: 2,
 		tooltip: {
 			enabled: true,
 			backgroundColor: '#FFFFFFDD'
@@ -270,14 +271,15 @@
 				if (textWidth > labelsMaxWidth) labelsMaxWidth = textWidth;
 			}
 		}
+		if (labelsMaxWidth > 0) labelsMaxWidth += 4;
 
 		//X Y Axis
 		ctx.lineJoin = "round";
-		ctx.lineWidth = 2;
+		ctx.lineWidth = this.options.axisWidth;
 		ctx.strokeStyle = this.options.xAxis.color;
 		ctx.moveTo(canvasWidth / this.options.overSampleFactor, this.canvas.clientHeight - xLabelSpace);
-		ctx.lineTo(labelsMaxWidth * this.options.overSampleFactor - 2, this.canvas.clientHeight - xLabelSpace);
-		ctx.lineTo(labelsMaxWidth * this.options.overSampleFactor - 2, 0);
+		ctx.lineTo(labelsMaxWidth, this.canvas.clientHeight - xLabelSpace);
+		ctx.lineTo(labelsMaxWidth, 0);
 		ctx.stroke();
 
 		// X Axis label
@@ -325,28 +327,28 @@
 				if (i === 0) {
 					firstX = x;
 					if (!isNaN(value)) {
-						var lineStart = 0 + labelsMaxWidth * this.options.overSampleFactor;
-						var lineEnd = value / xUnitsPerPixel + labelsMaxWidth * this.options.overSampleFactor;
-						if (!this.isRealTime) lineEnd = Math.round(value * xScale) + labelsMaxWidth * this.options.overSampleFactor;
+						var lineStart = 0 + labelsMaxWidth + this.options.axisWidth;
+						var lineEnd = value / xUnitsPerPixel + labelsMaxWidth + this.options.axisWidth;
+						if (!this.isRealTime) lineEnd = Math.round(value * xScale) + labelsMaxWidth + this.options.axisWidth;
 						this.drawBar(yBarPosition, yCenteredPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 					}
 				} else {
 					if (dataSet.length !== 1 && isNaN(dataSet[i - 1].value)) {
-						var lineStart = Math.round((lastX - firstX) / xUnitsPerPixel) + labelsMaxWidth * this.options.overSampleFactor;
+						var lineStart = Math.round((lastX - firstX) / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
 						if (!this.isRealTime) lineStart = Math.round((lastX - firstX) * xScale);
 						//if (lineStart < lastXend) lineStart = lastXend;
-						var lineEnd = Math.round((x - firstX) / xUnitsPerPixel) + labelsMaxWidth * this.options.overSampleFactor;
-						if (!this.isRealTime) lineEnd = Math.round((x - firstX) * xScale) + labelsMaxWidth * this.options.overSampleFactor;
+						var lineEnd = Math.round((x - firstX) / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
+						if (!this.isRealTime) lineEnd = Math.round((x - firstX) * xScale) + labelsMaxWidth + this.options.axisWidth;
 						this.drawBar(yBarPosition, yCenteredPosition, lineStart, lineEnd, dataSet[i - 1], timeSeries.options);
 					}
 					if (!isNaN(value)) {
-						var lineStart = Math.round((x - firstX) / xUnitsPerPixel) + labelsMaxWidth * this.options.overSampleFactor;
+						var lineStart = Math.round((x - firstX) / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
 						if (!this.isRealTime) lineStart = Math.round((x - firstX) * xScale);
 						if (lineStart < lastXend) lineStart = lastXend;
 						if (isNaN(dataSet[i].x)) lineStart = lastXend;
 						//var lineEnd = Math.round(((x - firstX) + value) / xUnitsPerPixel);
-						var lineEnd = Math.round(lineStart + (value / xUnitsPerPixel)) + labelsMaxWidth * this.options.overSampleFactor;
-						if (!this.isRealTime) lineEnd = Math.round(lineStart + (value * xScale)) + labelsMaxWidth * this.options.overSampleFactor;
+						var lineEnd = Math.round(lineStart + (value / xUnitsPerPixel)) + labelsMaxWidth + this.options.axisWidth;
+						if (!this.isRealTime) lineEnd = Math.round(lineStart + (value * xScale)) + labelsMaxWidth + this.options.axisWidth;
 						this.drawBar(yBarPosition, yCenteredPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 					}
 				}
@@ -442,7 +444,7 @@
 					if (ctx.isPointInPath(d.path2D, evt.offsetX * osf, evt.offsetY * osf)) {
 						var line = "";
 						if (d.desc.length > 0) {
-							line = "<span><b>" + d.text + "</b></span>";
+							line = "<span><b>" + d.desc + "</b></span>";
 							lines.push(line);
 						}
 						if (!isNaN(d.x)) {

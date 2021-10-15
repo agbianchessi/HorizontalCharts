@@ -63,20 +63,20 @@
 			chart.streamTo(document.getElementById("chart3"));
 		}
 		//
-		var ts7 = new TimeSeries(1);
-		var ts8 = new TimeSeries(2);
+		var ts7 = new TimeSeries(1, {labelText: "Day 1"});
+		var ts8 = new TimeSeries(2, {labelText: "Day 2"});
 		ts7.data = [
-			new DataSample({color:'#FF0000', value: 20}),
-			new DataSample({color:'#BB0000', value: 30}),
-			new DataSample({color:'#880000', value: 10}),
-			new DataSample({color:'#330000', value: 40})
+			new DataSample({color:'#FF0000', value: 20, desc:"Bob"}),
+			new DataSample({color:'#BB0000', value: 30, desc:"John"}),
+			new DataSample({color:'#880000', value: 10, desc:"Max"}),
+			new DataSample({color:'#330000', value: 40, desc:"Ann"})
 
 		];
 		ts8.data = [
-			new DataSample({color:'#0000FF', value: 10}),
-			new DataSample({color:'#0000BB', value: 50}),
-			new DataSample({color:'#000088', value: 20}),
-			new DataSample({color:'#000033', value: 20})
+			new DataSample({color:'#0000FF', value: 10, desc:"Bob"}),
+			new DataSample({color:'#0000BB', value: 50, desc:"John"}),
+			new DataSample({color:'#000088', value: 20, desc:"Max"}),
+			new DataSample({color:'#000033', value: 20, desc:"Ann"})
 
 		];
 		function createChart4() {
