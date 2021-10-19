@@ -336,7 +336,6 @@
 					if (dataSet.length !== 1 && isNaN(dataSet[i - 1].value)) {
 						var lineStart = Math.round((lastX - firstX) / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
 						if (!this.isRealTime) lineStart = Math.round((lastX - firstX) * xScale);
-						//if (lineStart < lastXend) lineStart = lastXend;
 						var lineEnd = Math.round((x - firstX) / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
 						if (!this.isRealTime) lineEnd = Math.round((x - firstX) * xScale) + labelsMaxWidth + this.options.axisWidth;
 						this.drawBar(yBarPosition, yCenteredPosition, lineStart, lineEnd, dataSet[i - 1], timeSeries.options);
@@ -346,7 +345,6 @@
 						if (!this.isRealTime) lineStart = Math.round((x - firstX) * xScale);
 						if (lineStart < lastXend) lineStart = lastXend;
 						if (isNaN(dataSet[i].x)) lineStart = lastXend;
-						//var lineEnd = Math.round(((x - firstX) + value) / xUnitsPerPixel);
 						var lineEnd = Math.round(lineStart + (value / xUnitsPerPixel)) + labelsMaxWidth + this.options.axisWidth;
 						if (!this.isRealTime) lineEnd = Math.round(lineStart + (value * xScale)) + labelsMaxWidth + this.options.axisWidth;
 						this.drawBar(yBarPosition, yCenteredPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
