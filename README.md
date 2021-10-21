@@ -48,7 +48,7 @@ ts3.data = [
 var canvas = document.getElementById('chart');
   
 // Create the chart
-var options = {xAxis: {xUnitsPerPixel: 0.1, xLabel:"Percentage of completion"}};
+var options = {xAxis: {xLabel:"Percentage of completion"}};
 var chart = new HorizontalChart(options);
 chart.addTimeSeries(ts1);
 chart.addTimeSeries(ts2);
