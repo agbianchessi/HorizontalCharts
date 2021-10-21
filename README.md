@@ -4,6 +4,11 @@
 ---
 
 ### Example
+Include the *HorizontalCharts* library:
+
+```html
+<script src="horizontalcharts.js"></script>
+```
 
 Given a `<canvas>`:
 
