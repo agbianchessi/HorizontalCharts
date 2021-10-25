@@ -376,7 +376,7 @@
 		if (tsOptions.showValues && !isNaN(dataSample.value)) {
 			var fontSize = (tsOptions.barHeight - 4 > 0 ? tsOptions.barHeight - 4 : 0);
 			ctx.font = 'bold ' + fontSize + 'px ' + 'monospace';
-			var valueString = dataSample.value;
+			var valueString = Number(dataSample.value.toFixed(2)).toString();
 			var textWidth = Math.ceil(ctx.measureText(valueString).width);
 			if (textWidth < xEnd - xStart && fontSize > 0) {
 				ctx.lineWidth = 1;
@@ -450,7 +450,7 @@
 							lines.push(line);
 						}
 						if (!isNaN(d.value)) {
-							line = "<span><b>Value:</b> " + d.value + "</span>";
+							line = "<span><b>Value:</b> " + Number(d.value.toFixed(2)) + "</span>";
 							lines.push(line);
 						}
 					}
