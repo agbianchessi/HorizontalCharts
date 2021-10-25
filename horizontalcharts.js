@@ -166,7 +166,7 @@
 		xAxis: {
 			xUnitsPerPixel: 10,
 			min: 0,
-			max: 110,
+			max: 105,
 			isTime: true,
 			ticksEnabled: true,
 			xLabel: "",
@@ -245,7 +245,6 @@
 		// Resize canvas
 		Util.resizeCanvas(this.canvas, this.options.overSampleFactor);
 		var canvasWidth = this.canvas.width;
-		var xScale = canvasWidth / (this.options.overSampleFactor * xMax); // For isRealTime=false only
 
 		// Clear the working area.
 		ctx.save();
@@ -272,6 +271,9 @@
 			}
 		}
 		if (labelsMaxWidth > 0) labelsMaxWidth += 4;
+
+		//
+		var xScale = (canvasWidth - (labelsMaxWidth + this.options.axisWidth) * this.options.overSampleFactor) / (this.options.overSampleFactor * xMax); // For isRealTime=false only
 
 		//X Y Axis
 		ctx.lineJoin = "round";
@@ -311,12 +313,9 @@
 				var labelString = timeSeries.options.labelText.length > 0
 					? timeSeries.options.labelText
 					: timeSeries.position;
-				var textWidth = Math.ceil(ctx.measureText(labelString).width);
-				var textHeight = this.options.yLabels.fontSize;
-				if (textWidth > labelsMaxWidth) labelsMaxWidth = textWidth;
 				// Label's text
 				ctx.fillStyle = this.options.yLabels.fontColor;
-				ctx.fillText(labelString, 3, yCenteredPosition);
+				ctx.fillText(labelString, 0, yCenteredPosition);
 			}
 
 			// Draw bars
@@ -328,25 +327,25 @@
 					firstX = x;
 					if (!isNaN(value)) {
 						var lineStart = 0 + labelsMaxWidth + this.options.axisWidth;
-						var lineEnd = value / xUnitsPerPixel + labelsMaxWidth + this.options.axisWidth;
-						if (!this.isRealTime) lineEnd = Math.round(value * xScale) + labelsMaxWidth + this.options.axisWidth;
+						var lineEnd = (value / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
+						if (!this.isRealTime) lineEnd = (value * xScale) + labelsMaxWidth + this.options.axisWidth;
 						this.drawBar(yBarPosition, yCenteredPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 					}
 				} else {
 					if (dataSet.length !== 1 && isNaN(dataSet[i - 1].value)) {
-						var lineStart = Math.round((lastX - firstX) / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
-						if (!this.isRealTime) lineStart = Math.round((lastX - firstX) * xScale);
-						var lineEnd = Math.round((x - firstX) / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
-						if (!this.isRealTime) lineEnd = Math.round((x - firstX) * xScale) + labelsMaxWidth + this.options.axisWidth;
+						var lineStart = ((lastX - firstX) / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
+						if (!this.isRealTime) lineStart = (lastX - firstX) * xScale;
+						var lineEnd = ((x - firstX) / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
+						if (!this.isRealTime) lineEnd = ((x - firstX) * xScale) + labelsMaxWidth + this.options.axisWidth;
 						this.drawBar(yBarPosition, yCenteredPosition, lineStart, lineEnd, dataSet[i - 1], timeSeries.options);
 					}
 					if (!isNaN(value)) {
-						var lineStart = Math.round((x - firstX) / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
-						if (!this.isRealTime) lineStart = Math.round((x - firstX) * xScale);
+						var lineStart = ((x - firstX) / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
+						if (!this.isRealTime) lineStart = (x - firstX) * xScale;
 						if (lineStart < lastXend) lineStart = lastXend;
 						if (isNaN(dataSet[i].x)) lineStart = lastXend;
-						var lineEnd = Math.round(lineStart + (value / xUnitsPerPixel)) + labelsMaxWidth + this.options.axisWidth;
-						if (!this.isRealTime) lineEnd = Math.round(lineStart + (value * xScale)) + labelsMaxWidth + this.options.axisWidth;
+						var lineEnd = lineStart + (value / xUnitsPerPixel);
+						if (!this.isRealTime) lineEnd = lineStart + (value * xScale);
 						this.drawBar(yBarPosition, yCenteredPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 					}
 				}
