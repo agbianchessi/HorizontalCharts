@@ -5,18 +5,18 @@
 	<title>Horizontal Chart example</title>
 	<script type="text/javascript" src="../horizontalcharts.js"></script>
 	<script type="text/javascript">
-		var colors = ["#FF0000", "#FFFF00", "#00FF00", "#0000FF", "#000000"];
-		// Randomly add a data point every 1s
+		var colors = ["#FF6384", "#36A2EB", "#4BC0C0", "#FFFF66", "#FF99FF"];
+		// Randomly add a data point every 5s
 		var ts1 = new TimeSeries(1);
 		var ts2 = new TimeSeries(2);
 		setInterval(function () {
 			//TimeSeries 1
 			var color = colors[Math.floor(Math.random() * 5)];
-			ts1.append(new DataSample( {x:new Date().getTime(), color:color} ));
+			ts1.append(new DataSample( {ts:new Date().getTime(), color:color, value: 2000} ));
 			//TimeSeries 2
 			color = colors[Math.floor(Math.random() * 5)];
-			ts2.append(new DataSample( {x:new Date().getTime(), color:color} ));
-		}, 1000);
+			ts2.append(new DataSample( {ts:new Date().getTime(), color:color, value: Math.random() * 10000} ));
+		}, 5000);
 		function createChart1() {
 			var defaultOptions = {};
 			var chart = new HorizontalChart(defaultOptions, true);
@@ -31,10 +31,10 @@
 		setInterval(function () {
 			//TimeSeries 3
 			var color = colors[Math.floor(Math.random() * 5)];
-			ts3.append(new DataSample( {x:new Date().getTime(), color:color, value: 2000} ));
+			ts3.append(new DataSample( {color:color, value: Math.random() * 3000} ));
 			//TimeSeries 4
 			color = colors[Math.floor(Math.random() * 5)];
-			ts4.append(new DataSample( {x:new Date().getTime(), color:color, value: Math.random() * 10000} ));
+			ts4.append(new DataSample( {color:color, value: Math.random() * 10000} ));
 		}, 5000);
 		function createChart2() {
 			var defaultOptions = {};
@@ -44,64 +44,44 @@
 			chart.streamTo(document.getElementById("chart2"));
 		}
 		//
-		// Randomly add a data point every 5s
-		var ts5 = new TimeSeries(1);
-		var ts6 = new TimeSeries(2);
-		setInterval(function () {
-			//TimeSeries 5
-			var color = colors[Math.floor(Math.random() * 5)];
-			ts5.append(new DataSample( {color:color, value: Math.random() * 3000} ));
-			//TimeSeries 6
-			color = colors[Math.floor(Math.random() * 5)];
-			ts6.append(new DataSample( {color:color, value: Math.random() * 10000} ));
-		}, 5000);
-		function createChart3() {
-			var defaultOptions = {};
-			var chart = new HorizontalChart(defaultOptions, true);
-			chart.addTimeSeries(ts5);
-			chart.addTimeSeries(ts6);
-			chart.streamTo(document.getElementById("chart3"));
-		}
-		//
-		var ts7 = new TimeSeries(1, {labelText: "Day 1"});
-		var ts8 = new TimeSeries(2, {labelText: "Day 2"});
-		var ts9 = new TimeSeries(3, {labelText: "Day 3"});
-		ts7.data = [
+		var ts5 = new TimeSeries(1, {labelText: "Day 1"});
+		var ts6 = new TimeSeries(2, {labelText: "Day 2"});
+		var ts7 = new TimeSeries(3, {labelText: "Day 3"});
+		ts5.data = [
 			new DataSample({color:'#FF0000', value: 20, desc:"Bob"}),
 			new DataSample({color:'#BB0000', value: 30, desc:"John"}),
 			new DataSample({color:'#880000', value: 10, desc:"Max"}),
 			new DataSample({color:'#330000', value: 40, desc:"Ann"})
 
 		];
-		ts8.data = [
+		ts6.data = [
 			new DataSample({color:'#0000FF', value: 10, desc:"Bob"}),
 			new DataSample({color:'#0000BB', value: 50, desc:"John"}),
 			new DataSample({color:'#000088', value: 20, desc:"Max"}),
 			new DataSample({color:'#000033', value: 20, desc:"Ann"})
 
 		];
-		ts9.data = [
+		ts7.data = [
 			new DataSample({color:'#00FF00', value: 10, desc:"Bob"}),
 			new DataSample({color:'#00BB00', value: 40, desc:"John"}),
 			new DataSample({color:'#008800', value: 15, desc:"Ann"})
 
 		];
-		function createChart4() {
+		function createChart3() {
 			var defaultOptions = {xAxis: {xLabel:"Percentage of completion"}};
 			var chart = new HorizontalChart(defaultOptions);
+			chart.addTimeSeries(ts5);
+			chart.addTimeSeries(ts6);
 			chart.addTimeSeries(ts7);
-			chart.addTimeSeries(ts8);
-			chart.addTimeSeries(ts9);
-			chart.streamTo(document.getElementById("chart4"));
+			chart.streamTo(document.getElementById("chart3"));
 		}
 	</script>
 </head>
 
-<body onload="createChart1();createChart2();createChart3();createChart4();">
+<body onload="createChart1();createChart2();createChart3();">
 	<canvas id="chart1" style="width:100%;"></canvas>
 	<canvas id="chart2" style="width:100%; padding-top:5"></canvas>
 	<canvas id="chart3" style="width:100%; padding-top:5"></canvas>
-	<canvas id="chart4" style="width:100%; padding-top:5"></canvas>
 </body>
 
 </html>

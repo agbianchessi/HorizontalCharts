@@ -9,7 +9,7 @@
 	'use strict';
 
 	var Util = {
-		extend: function () {
+		merge: function () {
 			arguments[0] = arguments[0] || {};
 			for (var i = 1; i < arguments.length; i++) {
 				for (var key in arguments[i]) {
@@ -18,7 +18,7 @@
 							if (arguments[i][key] instanceof Array) {
 								arguments[0][key] = arguments[i][key];
 							} else {
-								arguments[0][key] = Util.extend(arguments[0][key], arguments[i][key]);
+								arguments[0][key] = Util.merge(arguments[0][key], arguments[i][key]);
 							}
 						} else {
 							arguments[0][key] = arguments[i][key];
@@ -43,16 +43,18 @@
 	 *
 	 * @constructor
 	 * @param {Object} data - An object with <code>DataSample</code> data.
-	 * @param {number} data.x - The <code>DataSample</code> position on the abscissa axis. Use </code>NaN</code> to simply stack bars one afther the other. Timestamps are in milliseconds (number of milliseconds since the Unix Epoch). 
+	 * @param {number} data.ts - This <code>DataSample</code> Timestamp (milliseconds since the Unix Epoch). 
 	 * @param {string} data.color - The <code>DataSample</code> color on the graph.
 	 * @param {number} data.value - Optional parameter. The value of this <code>DataSample</code>.
 	 * @param {string} data.desc - Optional parameter. A text describing this <code>DataSample</code>, it will be shown in the tooltip.
 	 */
 	function DataSample(data) {
-		this.x = typeof data.x === 'number' ? data.x : Number.NaN;
+		this.ts = typeof data.ts === 'number' ? data.ts : Number.NaN;
 		this.color = typeof data.color === 'string' ? data.color : '#FF0000';
 		this.value = typeof data.value === 'number' ? data.value : Number.NaN;
 		this.desc = typeof data.desc === 'string' ? data.desc : '';
+		this.xStart = Number.NaN;
+		this.xEnd = Number.NaN;
 		this.path2D = null;
 	}
 
@@ -65,7 +67,7 @@
 	*/
 	function TimeSeries(position, options) {
 		this.position = position;
-		this.options = Util.extend({}, TimeSeries.defaultOptions, options);
+		this.options = Util.merge({}, TimeSeries.defaultOptions, options);
 		this.clear();
 	};
 
@@ -91,20 +93,20 @@
 	 * @param {DataSample} dataSample - The <code>DataSample</code> to add.
 	 */
 	TimeSeries.prototype.append = function (dataSample) {
-		if (isNaN(dataSample.x)) {
+		if (isNaN(dataSample.ts)) {
 			// Add to the end of the array
 			this.data.push(dataSample);
 			return;
 		}
 		// Rewind until we hit an older x
 		var i = this.data.length - 1;
-		while (i >= 0 && this.data[i].x > dataSample.x) {
+		while (i >= 0 && this.data[i].ts > dataSample.ts) {
 			i--;
 		}
 		if (i === -1) {
 			// This new item is the oldest data
 			this.data.splice(0, 0, dataSample);
-		} else if (this.data.length > 0 && this.data[i].x === dataSample.x) {
+		} else if (this.data.length > 0 && this.data[i].ts === dataSample.ts) {
 			// Replace existing values in the array
 			if (this.options.replaceValue) {
 				// Replace the previous sample
@@ -113,7 +115,7 @@
 		} else {
 			//insert
 			if (i < this.data.length - 1) {
-				// Splice into the correct position to keep the x's in order
+				// Splice into the correct position to keep the ts's in order
 				this.data.splice(i + 1, 0, dataSample);
 			} else {
 				// Add to the end of the array
@@ -122,15 +124,16 @@
 		}
 	};
 
-	TimeSeries.prototype.dropOldData = function (oldestValidX, maxDataSetLength) {
-		// We must always keep one expired data point as we need this to draw the
-		// line that comes into the chart from the left, but any points prior to that can be removed.
-		var removeCount = 0;
-		while (this.data.length - removeCount >= maxDataSetLength || this.data[removeCount + 1].x < oldestValidX) {
-			removeCount++;
-		}
-		if (removeCount !== 0) {
-			this.data.splice(0, removeCount);
+	TimeSeries.prototype.dropOldData = function (canvasWidth) {
+		var offset = canvasWidth * 0.1;
+		var lengthSum = 0;
+		for (var i = this.data.length - 1; i > 0; i--) {
+			if (isNaN(this.data[i].xEnd) || isNaN(this.data[i].xStart)) break;
+			lengthSum += this.data[i].xEnd - this.data[i].xStart;
+			if (lengthSum > canvasWidth - offset) {
+				this.data.splice(0, i + 1);
+				break;
+			}
 		}
 	};
 
@@ -143,7 +146,7 @@
 	function HorizontalChart(options, isRealTime = false) {
 		this.seriesSet = [];
 		this.isRealTime = isRealTime;
-		this.options = Util.extend({}, HorizontalChart.defaultChartOptions, options);
+		this.options = Util.merge({}, HorizontalChart.defaultChartOptions, options);
 	};
 
 	HorizontalChart.defaultChartOptions = {
@@ -152,7 +155,6 @@
 		backgroundColor: '#00000000',
 		padding: 5,
 		formatTime: function (ms) {
-			function pad2(number) { return (number < 10 ? '0' : '') + number }
 			function pad3(number) { if (number < 10) return '00' + number; if (number < 100) return '0' + number; return number; }
 			var date = new Date(ms);
 			var msStr = (pad3(ms - Math.floor(ms / 1000) * 1000) / 1000);
@@ -165,10 +167,7 @@
 		},
 		xAxis: {
 			xUnitsPerPixel: 10,
-			min: 0,
 			max: 105,
-			isTime: true,
-			ticksEnabled: true,
 			xLabel: "",
 			fontSize: 12,
 			fontFamily: 'monospace',
@@ -200,13 +199,10 @@
 	 */
 	HorizontalChart.prototype.streamTo = function (canvas) {
 		// DataSet check
-		var xDataOk = this.seriesSet.every(s => s.data.every(
-			(d, i, arr) => i == 0 ? true : isNaN(arr[i].x) === isNaN(arr[i - 1].x)
-		));
 		var valDataOk = this.seriesSet.every(s => s.data.every(
 			(d, i, arr) => i == 0 ? true : isNaN(arr[i].value) === isNaN(arr[i - 1].value)
 		));
-		if (!xDataOk || !valDataOk)
+		if (!valDataOk)
 			throw new Error('Invalid DataSet!');
 		// Render on Canvas
 		this.canvas = canvas;
@@ -219,9 +215,7 @@
 
 	HorizontalChart.prototype.render = function () {
 		var xUnitsPerPixel = this.options.xAxis.xUnitsPerPixel;
-		var xMin = this.options.xAxis.min;
 		var xMax = this.options.xAxis.max;
-		var maxDataSetLength = this.options.maxDataSetLength;
 		var nSeries = this.seriesSet.length;
 		var ctx = this.canvas.getContext("2d");
 		var canvasHeight = this.seriesSet.reduce(function (prevValue, currentSeries) {
@@ -319,42 +313,26 @@
 			}
 
 			// Draw bars
-			var firstX = 0, lastX = 0, lastXend = 0;
+			var firstX = 0, lastX = 0, lastXend = 0, lineEnd = 0;
 			for (var i = 0; i < dataSet.length; i++) {
-				var x = isNaN(dataSet[i].x) ? lastXend : dataSet[i].x;
+				var x = lastXend;
 				var value = dataSet[i].value;
 				if (i === 0) {
 					firstX = x;
-					if (!isNaN(value)) {
-						var lineStart = 0 + labelsMaxWidth + this.options.axisWidth;
-						var lineEnd = (value / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
-						if (!this.isRealTime) lineEnd = (value * xScale) + labelsMaxWidth + this.options.axisWidth;
-						this.drawBar(yBarPosition, yCenteredPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
-					}
+					var lineStart = 0 + labelsMaxWidth + this.options.axisWidth;
+					lineEnd = (value / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
+					if (!this.isRealTime) lineEnd = (value * xScale) + labelsMaxWidth + this.options.axisWidth;
+					this.drawBar(yBarPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 				} else {
-					if (dataSet.length !== 1 && isNaN(dataSet[i - 1].value)) {
-						var lineStart = ((lastX - firstX) / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
-						if (!this.isRealTime) lineStart = (lastX - firstX) * xScale;
-						var lineEnd = ((x - firstX) / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
-						if (!this.isRealTime) lineEnd = ((x - firstX) * xScale) + labelsMaxWidth + this.options.axisWidth;
-						this.drawBar(yBarPosition, yCenteredPosition, lineStart, lineEnd, dataSet[i - 1], timeSeries.options);
-					}
-					if (!isNaN(value)) {
-						var lineStart = ((x - firstX) / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
-						if (!this.isRealTime) lineStart = (x - firstX) * xScale;
-						if (lineStart < lastXend) lineStart = lastXend;
-						if (isNaN(dataSet[i].x)) lineStart = lastXend;
-						var lineEnd = lineStart + (value / xUnitsPerPixel);
-						if (!this.isRealTime) lineEnd = lineStart + (value * xScale);
-						this.drawBar(yBarPosition, yCenteredPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
-					}
+					var lineStart = lastXend;
+					lineEnd = lineStart + (value / xUnitsPerPixel);
+					if (!this.isRealTime) lineEnd = lineStart + (value * xScale);
+					this.drawBar(yBarPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 				}
 
 				// Delete old data that's moved off the left of the chart.
-				if (dataSet.length !== 1) {
-					var oldestValidX = Math.ceil(x - (canvasWidth * (xUnitsPerPixel / this.options.overSampleFactor)));
-					timeSeries.dropOldData(oldestValidX, maxDataSetLength);
-				}
+				if (dataSet.length > 1 && this.isRealTime)
+					timeSeries.dropOldData(Math.floor(canvasWidth / this.options.overSampleFactor));
 				lastX = x;
 				lastXend = lineEnd;
 			}
@@ -363,15 +341,18 @@
 		window.requestAnimationFrame((this.render.bind(this)));
 	};
 
-	HorizontalChart.prototype.drawBar = function (y, yCentered, xStart, xEnd, dataSample, tsOptions) {
+	HorizontalChart.prototype.drawBar = function (y, xStart, xEnd, dataSample, tsOptions) {
 		var ctx = this.canvas.getContext("2d");
-		//bar
+		// Start - End
+		dataSample.xStart = xStart;
+		dataSample.xEnd = xEnd;
+		// bar
 		var bar = new Path2D();
 		ctx.fillStyle = dataSample.color;
 		bar.rect(xStart, y, xEnd - xStart, tsOptions.barHeight);
 		ctx.fill(bar);
 		dataSample.path2D = bar;
-		//Print value
+		// Print value
 		if (tsOptions.showValues && !isNaN(dataSample.value)) {
 			var fontSize = (tsOptions.barHeight - 4 > 0 ? tsOptions.barHeight - 4 : 0);
 			ctx.font = 'bold ' + fontSize + 'px ' + 'monospace';
@@ -444,8 +425,8 @@
 							line = "<span><b>" + d.desc + "</b></span>";
 							lines.push(line);
 						}
-						if (!isNaN(d.x)) {
-							line = "<span><b>X:</b> " + (this.options.xAxis.isTime ? this.options.formatTime(d.x) : d.x) + "</span>";
+						if (!isNaN(d.ts)) {
+							line = "<span><b>Time:</b> " + this.options.formatTime(d.ts) + "</span>";
 							lines.push(line);
 						}
 						if (!isNaN(d.value)) {
