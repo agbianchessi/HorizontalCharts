@@ -6,6 +6,8 @@
 ---
 
 ### Example
+The best way to get started is try a simple example.
+
 Include the *HorizontalCharts* library:
 
 ```html

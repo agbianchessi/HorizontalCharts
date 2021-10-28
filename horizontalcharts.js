@@ -1,10 +1,12 @@
-/**
- * (c) 2021 Andrea Giovanni Bianchessi
- * MIT Licensed
- * For all details and documentation:
- * https://github.com/agbianchessi/HorizontalCharts
+/** 
+ * For all details and documentation: {@link https://www.horizontalcharts.org|www.horizontalcharts.org}
+ * @copyright Andrea Giovanni Bianchessi 2021
+ * @author Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com>
+ * @license MIT
+ * @version 1.1.2
+ *
+ * @module HorizontalCharts
  */
-
 ; (function (exports) {
 	'use strict';
 
@@ -43,11 +45,12 @@
 	 *
 	 * @constructor
 	 * @param {Object} data - An object with <code>DataSample</code> data.
-	 * @param {number} data.ts - This <code>DataSample</code> Timestamp (milliseconds since the Unix Epoch). 
-	 * @param {string} data.color - The <code>DataSample</code> color on the graph.
-	 * @param {number} data.value - Optional parameter. The value of this <code>DataSample</code>.
-	 * @param {string} data.desc - Optional parameter. A text describing this <code>DataSample</code>, it will be shown in the tooltip.
-	 */
+	 * @param {number} data.ts - This <code>DataSample</code> timestamp (milliseconds since the Unix Epoch). 
+	 * @param {string} data.color - This <code>DataSample</code> color on the graph.
+	 * @param {number} [data.value=NaN] - The value of this <code>DataSample</code>.
+	 * @param {string} [data.desc=""] - A short text describing this <code>DataSample</code>.
+	 * @memberof module:HorizontalCharts 
+	*/
 	function DataSample(data) {
 		this.ts = typeof data.ts === 'number' ? data.ts : Number.NaN;
 		this.color = typeof data.color === 'string' ? data.color : '#FF0000';
@@ -63,32 +66,40 @@
 	*
 	* @constructor
 	* @param {number} position - Unique, integer and strictly positive value, it sorts series on the graph from top to bottom.
-	* @param {Object} options - Optional <code>TimeSeries</code> options.
+	* @param {DefaultTimeSeriesOptions} [options] - <code>TimeSeries</code> options.
+	* @memberof module:HorizontalCharts
 	*/
 	function TimeSeries(position, options) {
 		this.position = position;
-		this.options = Util.merge({}, TimeSeries.defaultOptions, options);
+		this.options = Util.merge({}, TimeSeries.defaultTimeSeriesOptions, options);
 		this.clear();
 	};
 
-	TimeSeries.defaultOptions = {
+	/**
+ 	 * @typedef {Object} DefaultTimeSeriesOptions - Contains default chart options.
+	 * @property {number} [barHeight=22] - The thickness of the bars.
+	 * @property {boolean} [showValues=true] - Enables the printing of data samples values inside bars.
+	 * @property {string} [labelText=""] - A short text describing this <code>TimeSeries</code>.
+	 * @property {boolean} [replaceValue=false] - If data sample <code>ts</code> has an exact match in the series, this flag controls whether it is replaced, or not.
+	 * @property {boolean} [disabled=false] - This flag controls wheter this timeseries is displayed or not.
+ 	 */
+	TimeSeries.defaultTimeSeriesOptions = {
 		barHeight: 22,
 		showValues: true,
-		minBarLength: 5,
 		labelText: "",
-		replaceValue: false, //if <code>x</code> has an exact match in the series, this flag controls whether it is replaced, or not (defaults to false)
-		disabled: false //this flag controls wheter this timeseries is displayed or not
+		replaceValue: false,
+		disabled: false 
 	};
 
 	/**
-	 * Clears all data from this <code>TimeSeries</code> object.
+	 * Clears all data from this <code>TimeSeries</code>.
 	 */
 	TimeSeries.prototype.clear = function () {
 		this.data = [];
 	};
 
 	/**
-	 * Adds a new data point to the <code>TimeSeries</code>, preserving chronological order.
+	 * Adds a new data sample to the <code>TimeSeries</code>, preserving chronological order.
 	 *
 	 * @param {DataSample} dataSample - The <code>DataSample</code> to add.
 	 */
@@ -124,7 +135,11 @@
 		}
 	};
 
-	TimeSeries.prototype.dropOldData = function (canvasWidth) {
+	/**
+	 * 
+	 * @private
+	 */
+	TimeSeries.prototype._dropOldData = function (canvasWidth) {
 		var offset = canvasWidth * 0.1;
 		var lengthSum = 0;
 		for (var i = this.data.length - 1; i > 0; i--) {
@@ -141,7 +156,9 @@
 	 * Initialises a new <code>HorizontalChart</code>.
 	 *
 	 * @constructor
-	 * @param {Object} options - Optional <code>HorizontalChart</code> options.
+	 * @param {DefaultChartOptions} [options] - <code>HorizontalChart</code> options.
+	 * @param {boolean} [isRealTime=false] - Enables the real-time data visualization mode.
+	 * @memberof module:HorizontalCharts
 	 */
 	function HorizontalChart(options, isRealTime = false) {
 		this.seriesSet = [];
@@ -149,8 +166,32 @@
 		this.options = Util.merge({}, HorizontalChart.defaultChartOptions, options);
 	};
 
+	/**
+ 	 * @typedef {Object} DefaultChartOptions - Contains default chart options.
+	 * @property {number} [overSampleFactor=3] - Canvas scaling factor.
+	 * @property {string} [backgroundColor="#00000000"] - Background color (RGB[A] string) of the chart.
+	 * @property {number} [padding=5] - Space between timeseries.
+	 * @property {function} [formatTime] - Timestamp formatting function.
+	 * @property {number} [axesWidth=2] - The thickness of the X and Y axes.
+	 * @property {string} [axesColor="#000000"] - The color of the X and Y axes.
+	 * @property {Object} [tooltip] - Tooltip options.
+	 * @property {boolean} [tooltip.enabled=true] - If true tooltips are shown.
+	 * @property {string} [tooltip.backgroundColor="#FFFFFFDD"] - Tooltips backround color.
+	 * @property {Object} [xAxis] - X axis options.
+	 * @property {number} [xAxis.xUnitsPerPixel=10] - X axis scaling factor.
+	 * @property {number} [xAxis.max=105] - On real time charts this is the maximum value on the X axis. On non real time charts it is ignored.
+	 * @property {string} [xAxis.xLabel=""] - X axis title.
+	 * @property {number} [xAxis.fontSize=12] - Font size of the X axis title.
+	 * @property {string} [xAxis.fontFamily="monospace"] - Font family of the X axis title.
+	 * @property {string} [xAxis.fontColor="#000000"] - Font color of the X axis title.
+	 * @property {Object} [yLabels] - Y labels options.
+	 * @property {boolean} [yLabels.enabled=true] - If true Y labels are shown.
+	 * @property {boolean} [yLabels.fontSize=12] - Font size of the Y labels.
+	 * @property {string} [yLabels.fontFamily="monospace"] - Font family of the Y labels.
+	 * @property {string} [yLabels.fontColor="#000000"] - Font color of the Y labels.
+	 * 
+ 	 */ 
 	HorizontalChart.defaultChartOptions = {
-		maxDataSetLength: 50,
 		overSampleFactor: 3,
 		backgroundColor: '#00000000',
 		padding: 5,
@@ -160,7 +201,8 @@
 			var msStr = (pad3(ms - Math.floor(ms / 1000) * 1000) / 1000);
 			return date.toLocaleString('en-US', { hour12: false }) + msStr;
 		},
-		axisWidth: 2,
+		axesWidth: 2,
+		axesColor: '#000000',
 		tooltip: {
 			enabled: true,
 			backgroundColor: '#FFFFFFDD'
@@ -171,15 +213,13 @@
 			xLabel: "",
 			fontSize: 12,
 			fontFamily: 'monospace',
-			fontColor: '#000000',
-			color: '#000000'
+			fontColor: '#000000'
 		},
 		yLabels: {
 			enabled: true,
 			fontSize: 12,
 			fontFamily: 'monospace',
-			fontColor: '#000000',
-			backgroundColor: '#FFFFFF00'
+			fontColor: '#000000'
 		}
 	};
 
@@ -206,14 +246,18 @@
 			throw new Error('Invalid DataSet!');
 		// Render on Canvas
 		this.canvas = canvas;
-		this.render();
+		this._render();
 		// Add mouse listeners
-		this.canvas.addEventListener('click', this.mouseclick.bind(this));
-		this.canvas.addEventListener('mousemove', this.mousemove.bind(this));
-		this.canvas.addEventListener('mouseout', this.mouseout.bind(this));
+		this.canvas.addEventListener('click', this._mouseclick.bind(this));
+		this.canvas.addEventListener('mousemove', this._mousemove.bind(this));
+		this.canvas.addEventListener('mouseout', this._mouseout.bind(this));
 	};
 
-	HorizontalChart.prototype.render = function () {
+	/**
+	 * 
+	 * @private
+	 */
+	HorizontalChart.prototype._render = function () {
 		var xUnitsPerPixel = this.options.xAxis.xUnitsPerPixel;
 		var xMax = this.options.xAxis.max;
 		var nSeries = this.seriesSet.length;
@@ -267,12 +311,12 @@
 		if (labelsMaxWidth > 0) labelsMaxWidth += 4;
 
 		//
-		var xScale = (canvasWidth - (labelsMaxWidth + this.options.axisWidth) * this.options.overSampleFactor) / (this.options.overSampleFactor * xMax); // For isRealTime=false only
+		var xScale = (canvasWidth - (labelsMaxWidth + this.options.axesWidth) * this.options.overSampleFactor) / (this.options.overSampleFactor * xMax); // For isRealTime=false only
 
 		//X Y Axis
 		ctx.lineJoin = "round";
-		ctx.lineWidth = this.options.axisWidth;
-		ctx.strokeStyle = this.options.xAxis.color;
+		ctx.lineWidth = this.options.axesWidth;
+		ctx.strokeStyle = this.options.axesColor;
 		ctx.moveTo(canvasWidth / this.options.overSampleFactor, this.canvas.clientHeight - xLabelSpace);
 		ctx.lineTo(labelsMaxWidth, this.canvas.clientHeight - xLabelSpace);
 		ctx.lineTo(labelsMaxWidth, 0);
@@ -319,29 +363,33 @@
 				var value = dataSet[i].value;
 				if (i === 0) {
 					firstX = x;
-					var lineStart = 0 + labelsMaxWidth + this.options.axisWidth;
-					lineEnd = (value / xUnitsPerPixel) + labelsMaxWidth + this.options.axisWidth;
-					if (!this.isRealTime) lineEnd = (value * xScale) + labelsMaxWidth + this.options.axisWidth;
-					this.drawBar(yBarPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
+					var lineStart = 0 + labelsMaxWidth + this.options.axesWidth;
+					lineEnd = (value / xUnitsPerPixel) + labelsMaxWidth + this.options.axesWidth;
+					if (!this.isRealTime) lineEnd = (value * xScale) + labelsMaxWidth + this.options.axesWidth;
+					this._drawBar(yBarPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 				} else {
 					var lineStart = lastXend;
 					lineEnd = lineStart + (value / xUnitsPerPixel);
 					if (!this.isRealTime) lineEnd = lineStart + (value * xScale);
-					this.drawBar(yBarPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
+					this._drawBar(yBarPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 				}
 
 				// Delete old data that's moved off the left of the chart.
 				if (dataSet.length > 1 && this.isRealTime)
-					timeSeries.dropOldData(Math.floor(canvasWidth / this.options.overSampleFactor));
+					timeSeries._dropOldData(Math.floor(canvasWidth / this.options.overSampleFactor));
 				lastX = x;
 				lastXend = lineEnd;
 			}
 		}
 		// Periodic render
-		window.requestAnimationFrame((this.render.bind(this)));
+		window.requestAnimationFrame((this._render.bind(this)));
 	};
 
-	HorizontalChart.prototype.drawBar = function (y, xStart, xEnd, dataSample, tsOptions) {
+	/**
+	 * 
+	 * @private
+	 */
+	HorizontalChart.prototype._drawBar = function (y, xStart, xEnd, dataSample, tsOptions) {
 		var ctx = this.canvas.getContext("2d");
 		// Start - End
 		dataSample.xStart = xStart;
@@ -368,30 +416,54 @@
 		}
 	}
 
-	HorizontalChart.prototype.mouseclick = function (evt) {
+	/**
+	 * Mouse click event callback function.
+	 * 
+	 * @param {Object} evt - The mouse click event.
+	 * @private
+	 */
+	HorizontalChart.prototype._mouseclick = function (evt) {
 		return;
 	};
 
-	HorizontalChart.prototype.mousemove = function (evt) {
+	/**
+	 * Mouse move event callback function.
+	 * 
+	 * @param {Object} evt - The mouse move event.
+	 * @private
+	 */
+	HorizontalChart.prototype._mousemove = function (evt) {
 		this.mouseover = true;
 		this.mousePageX = evt.pageX;
 		this.mousePageY = evt.pageY;
 		if (!this.options.tooltip.enabled) {
 			return;
 		}
-		var el = this.getTooltipEl();
+		var el = this._getTooltipEl();
 		el.style.top = Math.round(this.mousePageY) + 'px';
 		el.style.left = Math.round(this.mousePageX) + 'px';
-		this.updateTooltip(evt);
+		this._updateTooltip(evt);
 	};
 
-	HorizontalChart.prototype.mouseout = function () {
+	/**
+	 * Mouse out event callback function.
+	 * 
+	 * @param {Object} evt - The mouse out event.
+	 * @private
+	 */
+	HorizontalChart.prototype._mouseout = function () {
 		this.mouseover = false;
 		if (this.tooltipEl)
 			this.tooltipEl.style.display = 'none';
 	};
 
-	HorizontalChart.prototype.getTooltipEl = function () {
+	/**
+	 * Retrieve the tooltip element.
+	 * 
+	 * @returns The tooltip element.
+	 * @private
+	 */
+	HorizontalChart.prototype._getTooltipEl = function () {
 		if (!this.tooltipEl) {
 			this.tooltipEl = document.createElement('div');
 			this.tooltipEl.className = 'horizontal-chart-tooltip';
@@ -405,8 +477,14 @@
 		return this.tooltipEl;
 	};
 
-	HorizontalChart.prototype.updateTooltip = function (evt) {
-		var el = this.getTooltipEl();
+	/**
+	 * Update the tooltip content.
+	 * 
+	 * @param {Object} evt - The mouse event.
+	 * @private
+	 */
+	HorizontalChart.prototype._updateTooltip = function (evt) {
+		var el = this._getTooltipEl();
 		if (!this.mouseover || !this.options.tooltip.enabled) {
 			el.style.display = 'none';
 			return;
