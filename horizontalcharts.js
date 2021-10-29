@@ -3,7 +3,7 @@
  * @copyright Andrea Giovanni Bianchessi 2021
  * @author Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com>
  * @license MIT
- * @version 1.1.2
+ * @version 1.1.3
  *
  * @module HorizontalCharts
  */
@@ -76,19 +76,19 @@
 	};
 
 	/**
- 	 * @typedef {Object} DefaultTimeSeriesOptions - Contains default chart options.
+	   * @typedef {Object} DefaultTimeSeriesOptions - Contains default chart options.
 	 * @property {number} [barHeight=22] - The thickness of the bars.
 	 * @property {boolean} [showValues=true] - Enables the printing of data samples values inside bars.
 	 * @property {string} [labelText=""] - A short text describing this <code>TimeSeries</code>.
 	 * @property {boolean} [replaceValue=false] - If data sample <code>ts</code> has an exact match in the series, this flag controls whether it is replaced, or not.
 	 * @property {boolean} [disabled=false] - This flag controls wheter this timeseries is displayed or not.
- 	 */
+	   */
 	TimeSeries.defaultTimeSeriesOptions = {
 		barHeight: 22,
 		showValues: true,
 		labelText: "",
 		replaceValue: false,
-		disabled: false 
+		disabled: false
 	};
 
 	/**
@@ -140,12 +140,11 @@
 	 * @private
 	 */
 	TimeSeries.prototype._dropOldData = function (canvasWidth) {
-		var offset = canvasWidth * 0.1;
 		var lengthSum = 0;
-		for (var i = this.data.length - 1; i > 0; i--) {
-			if (isNaN(this.data[i].xEnd) || isNaN(this.data[i].xStart)) break;
+		for (var i = this.data.length - 1; i >= 0; i--) {
+			if (isNaN(this.data[i].xEnd) || isNaN(this.data[i].xStart)) { console.log("NaN"); break; }
 			lengthSum += this.data[i].xEnd - this.data[i].xStart;
-			if (lengthSum > canvasWidth - offset) {
+			if (lengthSum > canvasWidth) {
 				this.data.splice(0, i + 1);
 				break;
 			}
@@ -167,7 +166,7 @@
 	};
 
 	/**
- 	 * @typedef {Object} DefaultChartOptions - Contains default chart options.
+	   * @typedef {Object} DefaultChartOptions - Contains default chart options.
 	 * @property {number} [overSampleFactor=3] - Canvas scaling factor.
 	 * @property {string} [backgroundColor="#00000000"] - Background color (RGB[A] string) of the chart.
 	 * @property {number} [padding=5] - Space between timeseries.
@@ -190,7 +189,7 @@
 	 * @property {string} [yLabels.fontFamily="monospace"] - Font family of the Y labels.
 	 * @property {string} [yLabels.fontColor="#000000"] - Font color of the Y labels.
 	 * 
- 	 */ 
+	   */
 	HorizontalChart.defaultChartOptions = {
 		overSampleFactor: 3,
 		backgroundColor: '#00000000',
@@ -357,12 +356,10 @@
 			}
 
 			// Draw bars
-			var firstX = 0, lastX = 0, lastXend = 0, lineEnd = 0;
+			var lastXend = 0, lineEnd = 0;
 			for (var i = 0; i < dataSet.length; i++) {
-				var x = lastXend;
 				var value = dataSet[i].value;
 				if (i === 0) {
-					firstX = x;
 					var lineStart = 0 + labelsMaxWidth + this.options.axesWidth;
 					lineEnd = (value / xUnitsPerPixel) + labelsMaxWidth + this.options.axesWidth;
 					if (!this.isRealTime) lineEnd = (value * xScale) + labelsMaxWidth + this.options.axesWidth;
@@ -373,13 +370,11 @@
 					if (!this.isRealTime) lineEnd = lineStart + (value * xScale);
 					this._drawBar(yBarPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 				}
-
-				// Delete old data that's moved off the left of the chart.
-				if (dataSet.length > 1 && this.isRealTime)
-					timeSeries._dropOldData(Math.floor(canvasWidth / this.options.overSampleFactor));
-				lastX = x;
 				lastXend = lineEnd;
 			}
+			// Delete old data that's moved off the left of the chart.
+			if (dataSet.length > 1 && this.isRealTime)
+				timeSeries._dropOldData(Math.floor(canvasWidth / this.options.overSampleFactor));
 		}
 		// Periodic render
 		window.requestAnimationFrame((this._render.bind(this)));
@@ -394,6 +389,9 @@
 		// Start - End
 		dataSample.xStart = xStart;
 		dataSample.xEnd = xEnd;
+		//
+		if (xEnd > this.canvas.width / this.options.overSampleFactor)
+			return
 		// bar
 		var bar = new Path2D();
 		ctx.fillStyle = dataSample.color;
