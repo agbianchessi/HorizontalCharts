@@ -3,7 +3,7 @@
  * @copyright Andrea Giovanni Bianchessi 2021
  * @author Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com>
  * @license MIT
- * @version 1.1.4
+ * @version 1.1.5
  *
  * @module HorizontalCharts
  */
@@ -46,14 +46,14 @@
 	 * @constructor
 	 * @param {Object} data - An object with <code>DataSample</code> data.
 	 * @param {number} data.ts - This <code>DataSample</code> timestamp (milliseconds since the Unix Epoch). 
-	 * @param {string} data.color - This <code>DataSample</code> color on the graph.
+	 * @param {string|CanvasPattern} data.color - The color or pattern of this <code>DataSample</code>.
 	 * @param {number} [data.value=NaN] - The value of this <code>DataSample</code>.
 	 * @param {string} [data.desc=""] - A short text describing this <code>DataSample</code>.
 	 * @memberof module:HorizontalCharts 
 	*/
 	function DataSample(data) {
 		this.ts = typeof data.ts === 'number' ? data.ts : Number.NaN;
-		this.color = typeof data.color === 'string' ? data.color : '#FF0000';
+		this.color = data.color;
 		this.value = typeof data.value === 'number' ? data.value : Number.NaN;
 		this.desc = typeof data.desc === 'string' ? data.desc : '';
 		this.xStart = Number.NaN;
