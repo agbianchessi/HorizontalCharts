@@ -3,7 +3,7 @@
  * @copyright Andrea Giovanni Bianchessi 2021
  * @author Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com>
  * @license MIT
- * @version 1.1.3
+ * @version 1.1.4
  *
  * @module HorizontalCharts
  */
@@ -76,7 +76,7 @@
 	};
 
 	/**
-	   * @typedef {Object} DefaultTimeSeriesOptions - Contains default chart options.
+	 * @typedef {Object} DefaultTimeSeriesOptions - Contains default chart options.
 	 * @property {number} [barHeight=22] - The thickness of the bars.
 	 * @property {boolean} [showValues=true] - Enables the printing of data samples values inside bars.
 	 * @property {string} [labelText=""] - A short text describing this <code>TimeSeries</code>.
@@ -142,7 +142,8 @@
 	TimeSeries.prototype._dropOldData = function (canvasWidth) {
 		var lengthSum = 0;
 		for (var i = this.data.length - 1; i >= 0; i--) {
-			if (isNaN(this.data[i].xEnd) || isNaN(this.data[i].xStart)) { console.log("NaN"); break; }
+			if (isNaN(this.data[i].xEnd) || isNaN(this.data[i].xStart))
+				break
 			lengthSum += this.data[i].xEnd - this.data[i].xStart;
 			if (lengthSum > canvasWidth) {
 				this.data.splice(0, i + 1);
@@ -166,7 +167,7 @@
 	};
 
 	/**
-	   * @typedef {Object} DefaultChartOptions - Contains default chart options.
+	 * @typedef {Object} DefaultChartOptions - Contains default chart options.
 	 * @property {number} [overSampleFactor=3] - Canvas scaling factor.
 	 * @property {string} [backgroundColor="#00000000"] - Background color (RGB[A] string) of the chart.
 	 * @property {number} [padding=5] - Space between timeseries.
@@ -176,6 +177,7 @@
 	 * @property {Object} [tooltip] - Tooltip options.
 	 * @property {boolean} [tooltip.enabled=true] - If true tooltips are shown.
 	 * @property {string} [tooltip.backgroundColor="#FFFFFFDD"] - Tooltips backround color.
+	 * @property {number} [minBarLength=0] - Minimum bar length.
 	 * @property {Object} [xAxis] - X axis options.
 	 * @property {number} [xAxis.xUnitsPerPixel=10] - X axis scaling factor.
 	 * @property {number} [xAxis.max=105] - On real time charts this is the maximum value on the X axis. On non real time charts it is ignored.
@@ -206,6 +208,7 @@
 			enabled: true,
 			backgroundColor: '#FFFFFFDD'
 		},
+		minBarLength: 0,
 		xAxis: {
 			xUnitsPerPixel: 10,
 			max: 105,
@@ -363,11 +366,15 @@
 					var lineStart = 0 + labelsMaxWidth + this.options.axesWidth;
 					lineEnd = (value / xUnitsPerPixel) + labelsMaxWidth + this.options.axesWidth;
 					if (!this.isRealTime) lineEnd = (value * xScale) + labelsMaxWidth + this.options.axesWidth;
+					if (this.options.minBarLength > 0 && (lineEnd - lineStart) < this.options.minBarLength)
+						lineEnd = lineStart + this.options.minBarLength
 					this._drawBar(yBarPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 				} else {
 					var lineStart = lastXend;
 					lineEnd = lineStart + (value / xUnitsPerPixel);
 					if (!this.isRealTime) lineEnd = lineStart + (value * xScale);
+					if (this.options.minBarLength > 0 && (lineEnd - lineStart) < this.options.minBarLength)
+						lineEnd = lineStart + this.options.minBarLength
 					this._drawBar(yBarPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 				}
 				lastXend = lineEnd;
