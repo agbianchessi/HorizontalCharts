@@ -3,7 +3,7 @@
  * @copyright Andrea Giovanni Bianchessi 2021
  * @author Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com>
  * @license MIT
- * @version 1.1.5
+ * @version 1.1.6
  *
  * @module HorizontalCharts
  */
@@ -226,12 +226,12 @@
 	};
 
 	/**
-	 * Adds a <code>TimeSeries</code> to this chart.
+	 * Adds <code>TimeSeries</code> to this chart.
 	 * 
-	 * @param {TimeSeries} timeSeries - The <code>TimeSeries</code> to add.
+	 * @param {...TimeSeries} timeSeries - The <code>TimeSeries</code> to add.
 	 */
-	HorizontalChart.prototype.addTimeSeries = function (timeSeries) {
-		this.seriesSet.push(timeSeries);
+	HorizontalChart.prototype.addTimeSeries = function (...timeSeries) {
+		this.seriesSet.push(...timeSeries);
 	};
 
 	/**
@@ -248,7 +248,7 @@
 			throw new Error('Invalid DataSet!');
 		// Render on Canvas
 		this.canvas = canvas;
-		this._render();
+		window.requestAnimationFrame((this._render.bind(this)));
 		// Add mouse listeners
 		this.canvas.addEventListener('click', this._mouseclick.bind(this));
 		this.canvas.addEventListener('mousemove', this._mousemove.bind(this));
@@ -315,7 +315,7 @@
 		//
 		var xScale = (canvasWidth - (labelsMaxWidth + this.options.axesWidth) * this.options.overSampleFactor) / (this.options.overSampleFactor * xMax); // For isRealTime=false only
 
-		//X Y Axis
+		// X Y Axis
 		ctx.lineJoin = "round";
 		ctx.lineWidth = this.options.axesWidth;
 		ctx.strokeStyle = this.options.axesColor;
@@ -471,7 +471,7 @@
 	HorizontalChart.prototype._getTooltipEl = function () {
 		if (!this.tooltipEl) {
 			this.tooltipEl = document.createElement('div');
-			this.tooltipEl.className = 'horizontal-chart-tooltip';
+			this.tooltipEl.className = 'horizontalcharts-tooltip';
 			this.tooltipEl.style.backgroundColor = this.options.tooltip.backgroundColor;
 			this.tooltipEl.style.border = '0.06em solid black';
 			this.tooltipEl.style.pointerEvents = 'none';

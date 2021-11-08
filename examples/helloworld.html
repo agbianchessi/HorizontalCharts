@@ -20,8 +20,7 @@
 		function createChart1() {
 			var defaultOptions = {};
 			var chart = new HorizontalChart(defaultOptions, true);
-			chart.addTimeSeries(ts1);
-			chart.addTimeSeries(ts2);
+			chart.addTimeSeries(ts1, ts2);
 			chart.streamTo(document.getElementById("chart1"));
 		}
 		//
@@ -39,8 +38,7 @@
 		function createChart2() {
 			var defaultOptions = {};
 			var chart = new HorizontalChart(defaultOptions, true);
-			chart.addTimeSeries(ts3);
-			chart.addTimeSeries(ts4);
+			chart.addTimeSeries(ts3, ts4);
 			chart.streamTo(document.getElementById("chart2"));
 		}
 		//
@@ -70,9 +68,7 @@
 		function createChart3() {
 			var defaultOptions = {xAxis: {xLabel:"Percentage of completion"}};
 			var chart = new HorizontalChart(defaultOptions);
-			chart.addTimeSeries(ts5);
-			chart.addTimeSeries(ts6);
-			chart.addTimeSeries(ts7);
+			chart.addTimeSeries(ts5, ts6, ts7);
 			chart.streamTo(document.getElementById("chart3"));
 		}
 	</script>

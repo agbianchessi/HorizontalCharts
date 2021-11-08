@@ -52,8 +52,6 @@ var canvas = document.getElementById('chart');
 // Create the chart
 var options = {xAxis: {xLabel:"Percentage of completion"}};
 var chart = new HorizontalChart(options);
-chart.addTimeSeries(ts1);
-chart.addTimeSeries(ts2);
-chart.addTimeSeries(ts3);
+chart.addTimeSeries(ts1, ts2, ts3);
 chart.streamTo(canvas);
 ```
