@@ -3,18 +3,18 @@
  * @copyright Andrea Giovanni Bianchessi 2021
  * @author Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com>
  * @license MIT
- * @version 1.1.6
+ * @version 1.1.7
  *
  * @module HorizontalCharts
  */
 ; (function (exports) {
 	'use strict';
 
-	var Util = {
+	const Util = {
 		merge: function () {
 			arguments[0] = arguments[0] || {};
-			for (var i = 1; i < arguments.length; i++) {
-				for (var key in arguments[i]) {
+			for (let i = 1; i < arguments.length; i++) {
+				for (let key in arguments[i]) {
 					if (arguments[i].hasOwnProperty(key)) {
 						if (typeof (arguments[i][key]) === 'object') {
 							if (arguments[i][key] instanceof Array) {
@@ -31,8 +31,8 @@
 			return arguments[0];
 		},
 		resizeCanvas: function (canvas, factor) {
-			var width = canvas.clientWidth;
-			var height = canvas.height;
+			const width = canvas.clientWidth;
+			const height = canvas.height;
 			canvas.width = 0 | (width * factor);
 			canvas.height = 0 | (height * factor);
 			canvas.style.height = height + 'px';
@@ -110,7 +110,7 @@
 			return;
 		}
 		// Rewind until we hit an older x
-		var i = this.data.length - 1;
+		let i = this.data.length - 1;
 		while (i >= 0 && this.data[i].ts > dataSample.ts) {
 			i--;
 		}
@@ -119,10 +119,8 @@
 			this.data.splice(0, 0, dataSample);
 		} else if (this.data.length > 0 && this.data[i].ts === dataSample.ts) {
 			// Replace existing values in the array
-			if (this.options.replaceValue) {
-				// Replace the previous sample
+			if (this.options.replaceValue)
 				this.data[i] = dataSample;
-			}
 		} else {
 			//insert
 			if (i < this.data.length - 1) {
@@ -140,8 +138,8 @@
 	 * @private
 	 */
 	TimeSeries.prototype._dropOldData = function (canvasWidth) {
-		var lengthSum = 0;
-		for (var i = this.data.length - 1; i >= 0; i--) {
+		let lengthSum = 0;
+		for (let i = this.data.length - 1; i >= 0; i--) {
 			if (isNaN(this.data[i].xEnd) || isNaN(this.data[i].xStart))
 				break
 			lengthSum += this.data[i].xEnd - this.data[i].xStart;
@@ -198,8 +196,8 @@
 		padding: 5,
 		formatTime: function (ms) {
 			function pad3(number) { if (number < 10) return '00' + number; if (number < 100) return '0' + number; return number; }
-			var date = new Date(ms);
-			var msStr = (pad3(ms - Math.floor(ms / 1000) * 1000) / 1000);
+			const date = new Date(ms);
+			const msStr = (pad3(ms - Math.floor(ms / 1000) * 1000) / 1000);
 			return date.toLocaleString('en-US', { hour12: false }) + msStr;
 		},
 		axesWidth: 2,
@@ -241,7 +239,7 @@
 	 */
 	HorizontalChart.prototype.streamTo = function (canvas) {
 		// DataSet check
-		var valDataOk = this.seriesSet.every(s => s.data.every(
+		const valDataOk = this.seriesSet.every(s => s.data.every(
 			(d, i, arr) => i == 0 ? true : isNaN(arr[i].value) === isNaN(arr[i - 1].value)
 		));
 		if (!valDataOk)
@@ -260,21 +258,23 @@
 	 * @private
 	 */
 	HorizontalChart.prototype._render = function () {
-		var xUnitsPerPixel = this.options.xAxis.xUnitsPerPixel;
-		var xMax = this.options.xAxis.max;
-		var nSeries = this.seriesSet.length;
-		var ctx = this.canvas.getContext("2d");
-		var canvasHeight = this.seriesSet.reduce(function (prevValue, currentSeries) {
-			if (currentSeries.options.disabled) return prevValue;
+		const xUnitsPerPixel = this.options.xAxis.xUnitsPerPixel;
+		const xMax = this.options.xAxis.max;
+		const nSeries = this.seriesSet.length;
+		const ctx = this.canvas.getContext("2d");
+		let canvasHeight = this.seriesSet.reduce(function (prevValue, currentSeries) {
+			if (currentSeries.options.disabled)
+				return prevValue;
 			return prevValue + currentSeries.options.barHeight;
 		}, 0);
-		var seriesCount = this.seriesSet.reduce(function (prevValue, currentSeries) {
-			if (currentSeries.options.disabled) return prevValue;
+		const seriesCount = this.seriesSet.reduce(function (prevValue, currentSeries) {
+			if (currentSeries.options.disabled)
+				return prevValue;
 			return ++prevValue;
 		}, 0);
 		canvasHeight += (seriesCount + 1) * this.options.padding;
 		//X Axis labels space
-		var xLabelSpace = 0;
+		let xLabelSpace = 0;
 		if (typeof this.options.xAxis.xLabel === "string" && this.options.xAxis.xLabel.length > 0) {
 			xLabelSpace = this.options.xAxis.fontSize + 5;
 			canvasHeight += xLabelSpace;
@@ -284,7 +284,7 @@
 		this.canvas.height = canvasHeight;
 		// Resize canvas
 		Util.resizeCanvas(this.canvas, this.options.overSampleFactor);
-		var canvasWidth = this.canvas.width;
+		const canvasWidth = this.canvas.width;
 
 		// Clear the working area.
 		ctx.save();
@@ -294,26 +294,26 @@
 		ctx.restore();
 
 		// Compute y labels max width
-		var labelsMaxWidth = 0;
+		let labelsMaxWidth = 0;
 		// For each data set...
-		for (var d = 0; d < this.seriesSet.length; d++) {
-			var timeSeries = this.seriesSet[d];
-			if (timeSeries.options.disabled) {
+		for (const timeSeries of this.seriesSet) {
+			if (timeSeries.options.disabled)
 				continue;
-			}
 			if (this.options.yLabels.enabled) {
 				ctx.font = "bold " + this.options.yLabels.fontSize + 'px ' + this.options.yLabels.fontFamily;
-				var labelString = timeSeries.options.labelText.length > 0
+				const labelString = timeSeries.options.labelText.length > 0
 					? timeSeries.options.labelText
 					: timeSeries.position;
-				var textWidth = Math.ceil(ctx.measureText(labelString).width);
-				if (textWidth > labelsMaxWidth) labelsMaxWidth = textWidth;
+				const textWidth = Math.ceil(ctx.measureText(labelString).width);
+				if (textWidth > labelsMaxWidth)
+					labelsMaxWidth = textWidth;
 			}
 		}
-		if (labelsMaxWidth > 0) labelsMaxWidth += 4;
+		if (labelsMaxWidth > 0)
+			labelsMaxWidth += 4;
 
 		//
-		var xScale = (canvasWidth - (labelsMaxWidth + this.options.axesWidth) * this.options.overSampleFactor) / (this.options.overSampleFactor * xMax); // For isRealTime=false only
+		const xScale = (canvasWidth - (labelsMaxWidth + this.options.axesWidth) * this.options.overSampleFactor) / (this.options.overSampleFactor * xMax); // For isRealTime=false only
 
 		// X Y Axis
 		ctx.lineJoin = "round";
@@ -326,8 +326,8 @@
 
 		// X Axis label
 		if (xLabelSpace > 0) {
-			var labelText = this.options.xAxis.xLabel;
-			var textWidth = Math.ceil(ctx.measureText(labelText).width);
+			const labelText = this.options.xAxis.xLabel;
+			const textWidth = Math.ceil(ctx.measureText(labelText).width);
 			ctx.fillStyle = this.options.xAxis.fontColor;
 			ctx.font = "bold " + this.options.xAxis.fontSize + 'px ' + this.options.xAxis.fontFamily;
 			ctx.fillText(labelText,
@@ -336,43 +336,42 @@
 			);
 		}
 		// Y Axis labels and bars, for each data set...
-		for (var d = 0; d < this.seriesSet.length; d++) {
-			var timeSeries = this.seriesSet[d];
-			if (timeSeries.options.disabled) {
+		for (const timeSeries of this.seriesSet) {
+			if (timeSeries.options.disabled)
 				continue;
-			}
-			ctx.fillStyle = this.options.yLabels.fontColor;
-			ctx.font = "bold " + this.options.yLabels.fontSize + 'px ' + this.options.yLabels.fontFamily;
-			var dataSet = timeSeries.data;
-			var position = timeSeries.position;
-			var barPaddedHeight = (canvasHeight - xLabelSpace) / nSeries;
-			var yBarPosition = Math.round(barPaddedHeight * (position - 1) + this.options.padding / 2);
-			var yCenteredPosition = Math.round(barPaddedHeight * (position - 1) + (barPaddedHeight / 2));
+			const dataSet = timeSeries.data;
+			const position = timeSeries.position;
+			const barPaddedHeight = (canvasHeight - xLabelSpace) / nSeries;
+			const yBarPosition = Math.round(barPaddedHeight * (position - 1) + this.options.padding / 2);
+			const yCenteredPosition = Math.round(barPaddedHeight * (position - 1) + (barPaddedHeight / 2));
 			// Draw y labels on the chart.
 			if (this.options.yLabels.enabled) {
-				var labelString = timeSeries.options.labelText.length > 0
+				const labelString = timeSeries.options.labelText.length > 0
 					? timeSeries.options.labelText
 					: timeSeries.position;
 				// Label's text
 				ctx.fillStyle = this.options.yLabels.fontColor;
+				ctx.font = "bold " + this.options.yLabels.fontSize + 'px ' + this.options.yLabels.fontFamily;
 				ctx.fillText(labelString, 0, yCenteredPosition);
 			}
 
 			// Draw bars
-			var lastXend = 0, lineEnd = 0;
-			for (var i = 0; i < dataSet.length; i++) {
-				var value = dataSet[i].value;
+			let lastXend = 0, lineEnd = 0;
+			for (let i = 0; i < dataSet.length; i++) {
+				const value = dataSet[i].value;
 				if (i === 0) {
-					var lineStart = 0 + labelsMaxWidth + this.options.axesWidth;
+					const lineStart = 0 + labelsMaxWidth + this.options.axesWidth;
 					lineEnd = (value / xUnitsPerPixel) + labelsMaxWidth + this.options.axesWidth;
-					if (!this.isRealTime) lineEnd = (value * xScale) + labelsMaxWidth + this.options.axesWidth;
+					if (!this.isRealTime)
+						lineEnd = (value * xScale) + labelsMaxWidth + this.options.axesWidth;
 					if (this.options.minBarLength > 0 && (lineEnd - lineStart) < this.options.minBarLength)
 						lineEnd = lineStart + this.options.minBarLength
 					this._drawBar(yBarPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 				} else {
-					var lineStart = lastXend;
+					const lineStart = lastXend;
 					lineEnd = lineStart + (value / xUnitsPerPixel);
-					if (!this.isRealTime) lineEnd = lineStart + (value * xScale);
+					if (!this.isRealTime)
+						lineEnd = lineStart + (value * xScale);
 					if (this.options.minBarLength > 0 && (lineEnd - lineStart) < this.options.minBarLength)
 						lineEnd = lineStart + this.options.minBarLength
 					this._drawBar(yBarPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
@@ -392,25 +391,29 @@
 	 * @private
 	 */
 	HorizontalChart.prototype._drawBar = function (y, xStart, xEnd, dataSample, tsOptions) {
-		var ctx = this.canvas.getContext("2d");
+		const ctx = this.canvas.getContext("2d");
 		// Start - End
 		dataSample.xStart = xStart;
 		dataSample.xEnd = xEnd;
+		dataSample.y = y;
 		//
 		if (xEnd > this.canvas.width / this.options.overSampleFactor)
 			return
 		// bar
-		var bar = new Path2D();
+		ctx.save();
+		let bar = new Path2D();
+		ctx.translate(xStart, y); // Aligns the bar starting point to the pattern starting point
+		bar.rect(0, 0, xEnd - xStart, tsOptions.barHeight);
 		ctx.fillStyle = dataSample.color;
-		bar.rect(xStart, y, xEnd - xStart, tsOptions.barHeight);
 		ctx.fill(bar);
 		dataSample.path2D = bar;
+		ctx.restore();
 		// Print value
 		if (tsOptions.showValues && !isNaN(dataSample.value)) {
-			var fontSize = (tsOptions.barHeight - 4 > 0 ? tsOptions.barHeight - 4 : 0);
+			const fontSize = (tsOptions.barHeight - 4 > 0 ? tsOptions.barHeight - 4 : 0);
 			ctx.font = 'bold ' + fontSize + 'px ' + 'monospace';
-			var valueString = Number(dataSample.value.toFixed(2)).toString();
-			var textWidth = Math.ceil(ctx.measureText(valueString).width);
+			const valueString = Number(dataSample.value.toFixed(2)).toString();
+			const textWidth = Math.ceil(ctx.measureText(valueString).width);
 			if (textWidth < xEnd - xStart && fontSize > 0) {
 				ctx.lineWidth = 1;
 				ctx.fillStyle = "#FFFFFF";
@@ -439,14 +442,11 @@
 	 */
 	HorizontalChart.prototype._mousemove = function (evt) {
 		this.mouseover = true;
-		this.mousePageX = evt.pageX;
-		this.mousePageY = evt.pageY;
-		if (!this.options.tooltip.enabled) {
+		if (!this.options.tooltip.enabled)
 			return;
-		}
-		var el = this._getTooltipEl();
-		el.style.top = Math.round(this.mousePageY) + 'px';
-		el.style.left = Math.round(this.mousePageX) + 'px';
+		let el = this._getTooltipEl();
+		el.style.top = Math.round(evt.pageY) + 'px';
+		el.style.left = Math.round(evt.pageX) + 'px';
 		this._updateTooltip(evt);
 	};
 
@@ -489,21 +489,19 @@
 	 * @private
 	 */
 	HorizontalChart.prototype._updateTooltip = function (evt) {
-		var el = this._getTooltipEl();
+		let el = this._getTooltipEl();
 		if (!this.mouseover || !this.options.tooltip.enabled) {
 			el.style.display = 'none';
 			return;
 		}
-		var ctx = this.canvas.getContext("2d");
-		var osf = this.options.overSampleFactor;
-		var lines = [];
-		for (var i = 0; i < this.seriesSet.length; i++) {
-			var s = this.seriesSet[i];
-			for (var j = 0; j < s.data.length; j++) {
-				var d = s.data[j];
+		const ctx = this.canvas.getContext("2d");
+		const osf = this.options.overSampleFactor;
+		let lines = [];
+		for (const s of this.seriesSet) {
+			for (const d of s.data) {
 				if (d.path2D != null) {
-					if (ctx.isPointInPath(d.path2D, evt.offsetX * osf, evt.offsetY * osf)) {
-						var line = "";
+					if (ctx.isPointInPath(d.path2D, (evt.offsetX - d.xStart) * osf, (evt.offsetY - d.y) * osf)) {
+						let line = "";
 						if (d.desc.length > 0) {
 							line = "<span><b>" + d.desc + "</b></span>";
 							lines.push(line);

@@ -23,9 +23,9 @@ Create time series and chart with code resembling:
 
 ```js
 // Create time series
-var ts1 = new TimeSeries(1, {labelText: "Day 1"});
-var ts2 = new TimeSeries(2, {labelText: "Day 2"});
-var ts3 = new TimeSeries(3, {labelText: "Day 3"});
+let ts1 = new TimeSeries(1, {labelText: "Day 1"});
+let ts2 = new TimeSeries(2, {labelText: "Day 2"});
+let ts3 = new TimeSeries(3, {labelText: "Day 3"});
 
 // Add data to time series
 ts1.data = [
@@ -47,11 +47,11 @@ ts3.data = [
   ];
   
 // Find the canvas
-var canvas = document.getElementById('chart');
+let canvas = document.getElementById('chart');
   
 // Create the chart
-var options = {xAxis: {xLabel:"Percentage of completion"}};
-var chart = new HorizontalChart(options);
+let options = {xAxis: {xLabel:"Percentage of completion"}};
+let chart = new HorizontalChart(options);
 chart.addTimeSeries(ts1, ts2, ts3);
 chart.streamTo(canvas);
 ```
