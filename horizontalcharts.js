@@ -3,7 +3,7 @@
  * @copyright Andrea Giovanni Bianchessi 2021
  * @author Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com>
  * @license MIT
- * @version 1.1.7
+ * @version 1.1.8
  *
  * @module HorizontalCharts
  */
@@ -84,7 +84,7 @@
 	 * @property {boolean} [disabled=false] - This flag controls wheter this timeseries is displayed or not.
 	   */
 	TimeSeries.defaultTimeSeriesOptions = {
-		barHeight: 22,
+		barHeight: 25,
 		showValues: true,
 		labelText: "",
 		replaceValue: false,
@@ -172,6 +172,14 @@
 	 * @property {function} [formatTime] - Timestamp formatting function.
 	 * @property {number} [axesWidth=2] - The thickness of the X and Y axes.
 	 * @property {string} [axesColor="#000000"] - The color of the X and Y axes.
+	 * @property {Object} [grid] - Grid options.
+	 * @property {Object} [grid.y] - Y grid axis options.
+	 * @property {boolean} [grid.y.enabled=false] - If true Y grid axis are shown.
+	 * @property {string} [grid.y.color="#000000"] - Y grid axis color.
+	 * @property {Object} [grid.x] - X grid axis options.
+	 * @property {boolean} [grid.x.enabled=false] - If true X grid axis are shown.
+	 * @property {number} [grid.x.stepSize=20] - X grid axis step size.
+	 * @property {string} [grid.x.color="#000000"] - X grid axis color. 
 	 * @property {Object} [tooltip] - Tooltip options.
 	 * @property {boolean} [tooltip.enabled=true] - If true tooltips are shown.
 	 * @property {string} [tooltip.backgroundColor="#FFFFFFDD"] - Tooltips backround color.
@@ -202,6 +210,17 @@
 		},
 		axesWidth: 2,
 		axesColor: '#000000',
+		grid: {
+			y: {
+				enabled: false,
+				color: '#000000'
+			},
+			x: {
+				enabled: false,
+				stepSize: 20,
+				color: '#000000'
+			}
+		},
 		tooltip: {
 			enabled: true,
 			backgroundColor: '#FFFFFFDD'
@@ -262,6 +281,8 @@
 		const xMax = this.options.xAxis.max;
 		const nSeries = this.seriesSet.length;
 		const ctx = this.canvas.getContext("2d");
+
+		//Canvas heigth
 		let canvasHeight = this.seriesSet.reduce(function (prevValue, currentSeries) {
 			if (currentSeries.options.disabled)
 				return prevValue;
@@ -273,6 +294,8 @@
 			return ++prevValue;
 		}, 0);
 		canvasHeight += (seriesCount + 1) * this.options.padding;
+		//X axis width
+		canvasHeight += this.options.axesWidth;
 		//X Axis labels space
 		let xLabelSpace = 0;
 		if (typeof this.options.xAxis.xLabel === "string" && this.options.xAxis.xLabel.length > 0) {
@@ -280,9 +303,9 @@
 			canvasHeight += xLabelSpace;
 		}
 
+		// Resize canvas
 		this.canvas.style.height = canvasHeight + "px";
 		this.canvas.height = canvasHeight;
-		// Resize canvas
 		Util.resizeCanvas(this.canvas, this.options.overSampleFactor);
 		const canvasWidth = this.canvas.width;
 
@@ -319,10 +342,25 @@
 		ctx.lineJoin = "round";
 		ctx.lineWidth = this.options.axesWidth;
 		ctx.strokeStyle = this.options.axesColor;
-		ctx.moveTo(canvasWidth / this.options.overSampleFactor, this.canvas.clientHeight - xLabelSpace);
-		ctx.lineTo(labelsMaxWidth, this.canvas.clientHeight - xLabelSpace);
+		ctx.beginPath();
+		ctx.moveTo(canvasWidth / this.options.overSampleFactor, this.canvas.clientHeight - (ctx.lineWidth / 2) - xLabelSpace);
+		ctx.lineTo(labelsMaxWidth, this.canvas.clientHeight - (ctx.lineWidth / 2) - xLabelSpace);
 		ctx.lineTo(labelsMaxWidth, 0);
 		ctx.stroke();
+
+		// X grid
+		if (this.options.grid.x.enabled) {
+			let xPos = this.options.grid.x.stepSize;
+			ctx.lineWidth = 1;
+			ctx.strokeStyle = this.options.grid.x.color;
+			while (xMax - xPos > 0) {
+				ctx.beginPath();
+				ctx.moveTo((xPos * xScale) + labelsMaxWidth + this.options.axesWidth, this.canvas.clientHeight - (ctx.lineWidth / 2) - xLabelSpace);
+				ctx.lineTo((xPos * xScale) + labelsMaxWidth + this.options.axesWidth, 0);
+				ctx.stroke();
+				xPos += this.options.grid.x.stepSize;
+			}
+		}
 
 		// X Axis label
 		if (xLabelSpace > 0) {
@@ -341,7 +379,7 @@
 				continue;
 			const dataSet = timeSeries.data;
 			const position = timeSeries.position;
-			const barPaddedHeight = (canvasHeight - xLabelSpace) / nSeries;
+			const barPaddedHeight = (canvasHeight - this.options.axesWidth - xLabelSpace) / nSeries;
 			const yBarPosition = Math.round(barPaddedHeight * (position - 1) + this.options.padding / 2);
 			const yCenteredPosition = Math.round(barPaddedHeight * (position - 1) + (barPaddedHeight / 2));
 			// Draw y labels on the chart.
@@ -353,6 +391,16 @@
 				ctx.fillStyle = this.options.yLabels.fontColor;
 				ctx.font = "bold " + this.options.yLabels.fontSize + 'px ' + this.options.yLabels.fontFamily;
 				ctx.fillText(labelString, 0, yCenteredPosition);
+			}
+
+			// Y grid
+			if (this.options.grid.y.enabled && position > 1) {
+				ctx.lineWidth = 1;
+				ctx.strokeStyle = this.options.grid.y.color;
+				ctx.beginPath();
+				ctx.moveTo(labelsMaxWidth, yBarPosition - this.options.padding / 2);
+				ctx.lineTo(canvasWidth / this.options.overSampleFactor, yBarPosition - this.options.padding / 2);
+				ctx.stroke();
 			}
 
 			// Draw bars
