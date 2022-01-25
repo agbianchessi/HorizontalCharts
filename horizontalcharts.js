@@ -1,9 +1,9 @@
 /** 
  * For all details and documentation: {@link https://www.horizontalcharts.org|www.horizontalcharts.org}
- * @copyright Andrea Giovanni Bianchessi 2021
+ * @copyright Andrea Giovanni Bianchessi 2022
  * @author Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com>
  * @license MIT
- * @version 1.1.8
+ * @version 1.1.9
  *
  * @module HorizontalCharts
  */
@@ -279,19 +279,18 @@
 	HorizontalChart.prototype._render = function () {
 		const xUnitsPerPixel = this.options.xAxis.xUnitsPerPixel;
 		const xMax = this.options.xAxis.max;
-		const nSeries = this.seriesSet.length;
 		const ctx = this.canvas.getContext("2d");
+		const seriesCount = this.seriesSet.reduce(function (prevValue, currentSeries) {
+			if (currentSeries.options.disabled)
+				return prevValue;
+			return ++prevValue;
+		}, 0);
 
 		//Canvas heigth
 		let canvasHeight = this.seriesSet.reduce(function (prevValue, currentSeries) {
 			if (currentSeries.options.disabled)
 				return prevValue;
 			return prevValue + currentSeries.options.barHeight;
-		}, 0);
-		const seriesCount = this.seriesSet.reduce(function (prevValue, currentSeries) {
-			if (currentSeries.options.disabled)
-				return prevValue;
-			return ++prevValue;
 		}, 0);
 		canvasHeight += (seriesCount + 1) * this.options.padding;
 		//X axis width
@@ -310,11 +309,9 @@
 		const canvasWidth = this.canvas.width;
 
 		// Clear the working area.
-		ctx.save();
 		ctx.fillStyle = this.options.backgroundColor;
 		ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 		ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-		ctx.restore();
 
 		// Compute y labels max width
 		let labelsMaxWidth = 0;
@@ -335,8 +332,8 @@
 		if (labelsMaxWidth > 0)
 			labelsMaxWidth += 4;
 
-		//
-		const xScale = (canvasWidth - (labelsMaxWidth + this.options.axesWidth) * this.options.overSampleFactor) / (this.options.overSampleFactor * xMax); // For isRealTime=false only
+		// Scale factor for non real-time charts
+		const xScale = (canvasWidth - (labelsMaxWidth + this.options.axesWidth) * this.options.overSampleFactor) / (this.options.overSampleFactor * xMax);
 
 		// X Y Axis
 		ctx.lineJoin = "round";
@@ -379,7 +376,7 @@
 				continue;
 			const dataSet = timeSeries.data;
 			const position = timeSeries.position;
-			const barPaddedHeight = (canvasHeight - this.options.axesWidth - xLabelSpace) / nSeries;
+			const barPaddedHeight = (canvasHeight - this.options.axesWidth - xLabelSpace) / seriesCount;
 			const yBarPosition = Math.round(barPaddedHeight * (position - 1) + this.options.padding / 2);
 			const yCenteredPosition = Math.round(barPaddedHeight * (position - 1) + (barPaddedHeight / 2));
 			// Draw y labels on the chart.
