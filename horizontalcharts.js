@@ -3,7 +3,7 @@
  * @copyright Andrea Giovanni Bianchessi 2022
  * @author Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com>
  * @license MIT
- * @version 1.1.9
+ * @version 1.2.0
  *
  * @module HorizontalCharts
  */
@@ -162,11 +162,12 @@
 		this.seriesSet = [];
 		this.isRealTime = isRealTime;
 		this.options = Util.merge({}, HorizontalChart.defaultChartOptions, options);
+		this._overSampleFactor = 0;
 	};
 
 	/**
 	 * @typedef {Object} DefaultChartOptions - Contains default chart options.
-	 * @property {number} [overSampleFactor=3] - Canvas scaling factor.
+	 * @property {number} [customOverSampleFactor=0] - User-defined Canvas scaling factor. 0 = not used.
 	 * @property {string} [backgroundColor="#00000000"] - Background color (RGB[A] string) of the chart.
 	 * @property {number} [padding=5] - Space between timeseries.
 	 * @property {function} [formatTime] - Timestamp formatting function.
@@ -199,7 +200,7 @@
 	 * 
 	   */
 	HorizontalChart.defaultChartOptions = {
-		overSampleFactor: 3,
+		customOverSampleFactor: 0,
 		backgroundColor: '#00000000',
 		padding: 5,
 		formatTime: function (ms) {
@@ -305,7 +306,13 @@
 		// Resize canvas
 		this.canvas.style.height = canvasHeight + "px";
 		this.canvas.height = canvasHeight;
-		Util.resizeCanvas(this.canvas, this.options.overSampleFactor);
+		if (this.options.customOverSampleFactor > 0)
+			this._overSampleFactor = this.options.customOverSampleFactor;
+		else if (typeof exports.devicePixelRatio == 'undefined')
+			this._overSampleFactor = 3;
+		else
+			this._overSampleFactor = exports.devicePixelRatio;
+		Util.resizeCanvas(this.canvas, this._overSampleFactor);
 		const canvasWidth = this.canvas.width;
 
 		// Clear the working area.
@@ -333,14 +340,14 @@
 			labelsMaxWidth += 4;
 
 		// Scale factor for non real-time charts
-		const xScale = (canvasWidth - (labelsMaxWidth + this.options.axesWidth) * this.options.overSampleFactor) / (this.options.overSampleFactor * xMax);
+		const xScale = (canvasWidth - (labelsMaxWidth + this.options.axesWidth) * this._overSampleFactor) / (this._overSampleFactor * xMax);
 
 		// X Y Axis
 		ctx.lineJoin = "round";
 		ctx.lineWidth = this.options.axesWidth;
 		ctx.strokeStyle = this.options.axesColor;
 		ctx.beginPath();
-		ctx.moveTo(canvasWidth / this.options.overSampleFactor, this.canvas.clientHeight - (ctx.lineWidth / 2) - xLabelSpace);
+		ctx.moveTo(canvasWidth / this._overSampleFactor, this.canvas.clientHeight - (ctx.lineWidth / 2) - xLabelSpace);
 		ctx.lineTo(labelsMaxWidth, this.canvas.clientHeight - (ctx.lineWidth / 2) - xLabelSpace);
 		ctx.lineTo(labelsMaxWidth, 0);
 		ctx.stroke();
@@ -366,7 +373,7 @@
 			ctx.fillStyle = this.options.xAxis.fontColor;
 			ctx.font = "bold " + this.options.xAxis.fontSize + 'px ' + this.options.xAxis.fontFamily;
 			ctx.fillText(labelText,
-				canvasWidth / (2 * this.options.overSampleFactor) - textWidth / 2,
+				canvasWidth / (2 * this._overSampleFactor) - textWidth / 2,
 				this.canvas.clientHeight - xLabelSpace / 2 + this.options.xAxis.fontSize / 2
 			);
 		}
@@ -396,7 +403,7 @@
 				ctx.strokeStyle = this.options.grid.y.color;
 				ctx.beginPath();
 				ctx.moveTo(labelsMaxWidth, yBarPosition - this.options.padding / 2);
-				ctx.lineTo(canvasWidth / this.options.overSampleFactor, yBarPosition - this.options.padding / 2);
+				ctx.lineTo(canvasWidth / this._overSampleFactor, yBarPosition - this.options.padding / 2);
 				ctx.stroke();
 			}
 
@@ -425,7 +432,7 @@
 			}
 			// Delete old data that's moved off the left of the chart.
 			if (dataSet.length > 1 && this.isRealTime)
-				timeSeries._dropOldData(Math.floor(canvasWidth / this.options.overSampleFactor));
+				timeSeries._dropOldData(Math.floor(canvasWidth / this._overSampleFactor));
 		}
 		// Periodic render
 		window.requestAnimationFrame((this._render.bind(this)));
@@ -442,7 +449,7 @@
 		dataSample.xEnd = xEnd;
 		dataSample.y = y;
 		//
-		if (xEnd > this.canvas.width / this.options.overSampleFactor)
+		if (xEnd > this.canvas.width / this._overSampleFactor)
 			return
 		// bar
 		ctx.save();
@@ -540,7 +547,7 @@
 			return;
 		}
 		const ctx = this.canvas.getContext("2d");
-		const osf = this.options.overSampleFactor;
+		const osf = this._overSampleFactor;
 		let lines = [];
 		for (const s of this.seriesSet) {
 			for (const d of s.data) {
