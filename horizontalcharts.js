@@ -3,7 +3,7 @@
  * @copyright Andrea Giovanni Bianchessi 2022
  * @author Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com>
  * @license MIT
- * @version 1.2.0
+ * @version 1.2.1
  *
  * @module HorizontalCharts
  */
@@ -204,10 +204,8 @@
 		backgroundColor: '#00000000',
 		padding: 5,
 		formatTime: function (ms) {
-			function pad3(number) { if (number < 10) return '00' + number; if (number < 100) return '0' + number; return number; }
 			const date = new Date(ms);
-			const msStr = (pad3(ms - Math.floor(ms / 1000) * 1000) / 1000);
-			return date.toLocaleString('en-US', { hour12: false }) + msStr;
+            return date.toLocaleString('en-US', { hour12: false }) + "." + date.getMilliseconds();
 		},
 		axesWidth: 2,
 		axesColor: '#000000',
