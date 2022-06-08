@@ -3,7 +3,7 @@
  * @copyright Andrea Giovanni Bianchessi 2022
  * @author Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com>
  * @license MIT
- * @version 1.2.1
+ * @version 1.2.2
  *
  * @module HorizontalCharts
  */
@@ -47,6 +47,8 @@
 	 * @param {Object} data - An object with <code>DataSample</code> data.
 	 * @param {number} data.ts - This <code>DataSample</code> timestamp (milliseconds since the Unix Epoch). 
 	 * @param {string|CanvasPattern} data.color - The color or pattern of this <code>DataSample</code>.
+	 * @param {number} [data.borderWidth=1] - The border width of this <code>DataSample</code>. 0 = no border line.
+	 * @param {string} [data.borderColor="black"] - The border color of this <code>DataSample</code>.
 	 * @param {number} [data.value=NaN] - The value of this <code>DataSample</code>.
 	 * @param {string} [data.desc=""] - A short text describing this <code>DataSample</code>.
 	 * @memberof module:HorizontalCharts 
@@ -54,6 +56,8 @@
 	function DataSample(data) {
 		this.ts = typeof data.ts === 'number' ? data.ts : Number.NaN;
 		this.color = data.color;
+		this.borderWidth = typeof data.borderWidth === 'number' ? data.borderWidth : 1;
+		this.borderColor = typeof data.borderColor === 'string' ? data.borderColor : 'black';
 		this.value = typeof data.value === 'number' ? data.value : Number.NaN;
 		this.desc = typeof data.desc === 'string' ? data.desc : '';
 		this.xStart = Number.NaN;
@@ -198,7 +202,7 @@
 	 * @property {string} [yLabels.fontFamily="monospace"] - Font family of the Y labels.
 	 * @property {string} [yLabels.fontColor="#000000"] - Font color of the Y labels.
 	 * 
-	   */
+	 */
 	HorizontalChart.defaultChartOptions = {
 		customOverSampleFactor: 0,
 		backgroundColor: '#00000000',
@@ -452,10 +456,13 @@
 		// bar
 		ctx.save();
 		let bar = new Path2D();
-		ctx.translate(xStart, y); // Aligns the bar starting point to the pattern starting point
-		bar.rect(0, 0, xEnd - xStart, tsOptions.barHeight);
+		ctx.translate(Math.round(xStart), Math.round(y)); // Aligns the bar starting point to the pattern starting point
+		bar.rect(0, 0, Math.round(xEnd) - Math.round(xStart), Math.round(tsOptions.barHeight));
 		ctx.fillStyle = dataSample.color;
+		ctx.lineWidth = dataSample.borderWidth > 0 ? dataSample.borderWidth : 1;
+		ctx.strokeStyle = dataSample.borderWidth > 0 ? dataSample.borderColor : dataSample.color;
 		ctx.fill(bar);
+		ctx.stroke(bar);
 		dataSample.path2D = bar;
 		ctx.restore();
 		// Print value
