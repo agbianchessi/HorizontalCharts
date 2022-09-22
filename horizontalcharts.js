@@ -15,7 +15,7 @@
 			arguments[0] = arguments[0] || {};
 			for (let i = 1; i < arguments.length; i++) {
 				for (let key in arguments[i]) {
-					if (arguments[i].hasOwnProperty(key)) {
+					if (Object.hasOwn(arguments[i], key)) {
 						if (typeof (arguments[i][key]) === 'object') {
 							if (arguments[i][key] instanceof Array) {
 								arguments[0][key] = arguments[i][key];
@@ -209,7 +209,7 @@
 		padding: 5,
 		formatTime: function (ms) {
 			const date = new Date(ms);
-            return date.toLocaleString('en-US', { hour12: false }) + "." + date.getMilliseconds();
+			return date.toLocaleString('en-US', { hour12: false }) + "." + date.getMilliseconds();
 		},
 		axesWidth: 2,
 		axesColor: '#000000',
