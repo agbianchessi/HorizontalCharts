@@ -3,7 +3,7 @@
  * @copyright Andrea Giovanni Bianchessi 2022
  * @author Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com>
  * @license MIT
- * @version 1.2.2
+ * @version 1.2.3
  *
  * @module HorizontalCharts
  */
@@ -30,9 +30,9 @@
 			}
 			return arguments[0];
 		},
-		resizeCanvas: function (canvas, factor) {
-			const width = canvas.clientWidth;
-			const height = canvas.height;
+		resizeCanvas: function (canvas, factor, horizontal) {
+			const width = horizontal ? canvas.clientWidth : canvas.width;
+			const height = horizontal ? canvas.height : canvas.clientHeight;
 			canvas.width = 0 | (width * factor);
 			canvas.height = 0 | (height * factor);
 			canvas.style.height = height + 'px';
@@ -141,13 +141,13 @@
 	 * 
 	 * @private
 	 */
-	TimeSeries.prototype._dropOldData = function (canvasWidth) {
+	TimeSeries.prototype._dropOldData = function (chartXlength) {
 		let lengthSum = 0;
 		for (let i = this.data.length - 1; i >= 0; i--) {
 			if (isNaN(this.data[i].xEnd) || isNaN(this.data[i].xStart))
 				break
 			lengthSum += this.data[i].xEnd - this.data[i].xStart;
-			if (lengthSum > canvasWidth) {
+			if (lengthSum > chartXlength) {
 				this.data.splice(0, i + 1);
 				break;
 			}
@@ -174,6 +174,7 @@
 	 * @property {number} [customOverSampleFactor=0] - User-defined Canvas scaling factor. 0 = not used.
 	 * @property {string} [backgroundColor="#00000000"] - Background color (RGB[A] string) of the chart.
 	 * @property {number} [padding=5] - Space between timeseries.
+	 * @property {number} [horizontal=true] - If false chart is 90° rotated counterclockwise.
 	 * @property {function} [formatTime] - Timestamp formatting function.
 	 * @property {number} [axesWidth=2] - The thickness of the X and Y axes.
 	 * @property {string} [axesColor="#000000"] - The color of the X and Y axes.
@@ -207,6 +208,7 @@
 		customOverSampleFactor: 0,
 		backgroundColor: '#00000000',
 		padding: 5,
+		horizontal: true,
 		formatTime: function (ms) {
 			const date = new Date(ms);
 			return date.toLocaleString('en-US', { hour12: false }) + "." + date.getMilliseconds();
@@ -288,40 +290,46 @@
 				return prevValue;
 			return ++prevValue;
 		}, 0);
-
 		//Canvas heigth
-		let canvasHeight = this.seriesSet.reduce(function (prevValue, currentSeries) {
+		let chartYLength = this.seriesSet.reduce(function (prevValue, currentSeries) {
 			if (currentSeries.options.disabled)
 				return prevValue;
 			return prevValue + currentSeries.options.barHeight;
 		}, 0);
-		canvasHeight += (seriesCount + 1) * this.options.padding;
+		chartYLength += (seriesCount + 1) * this.options.padding;
 		//X axis width
-		canvasHeight += this.options.axesWidth;
+		chartYLength += this.options.axesWidth;
 		//X Axis labels space
 		let xLabelSpace = 0;
 		if (typeof this.options.xAxis.xLabel === "string" && this.options.xAxis.xLabel.length > 0) {
 			xLabelSpace = this.options.xAxis.fontSize + 5;
-			canvasHeight += xLabelSpace;
+			chartYLength += xLabelSpace;
 		}
-
 		// Resize canvas
-		this.canvas.style.height = canvasHeight + "px";
-		this.canvas.height = canvasHeight;
+		if (this.options.horizontal) {
+			this.canvas.style.height = chartYLength + "px";
+			this.canvas.height = chartYLength;
+		} else {
+			this.canvas.style.width = chartYLength + "px";
+			this.canvas.width = chartYLength;
+		}
 		if (this.options.customOverSampleFactor > 0)
 			this._overSampleFactor = this.options.customOverSampleFactor;
 		else if (typeof exports.devicePixelRatio == 'undefined')
 			this._overSampleFactor = 3;
 		else
 			this._overSampleFactor = exports.devicePixelRatio;
-		Util.resizeCanvas(this.canvas, this._overSampleFactor);
-		const canvasWidth = this.canvas.width;
-
+		Util.resizeCanvas(this.canvas, this._overSampleFactor, this.options.horizontal);
+		const chartXlength = this.options.horizontal ? this.canvas.width : this.canvas.height;
 		// Clear the working area.
 		ctx.fillStyle = this.options.backgroundColor;
-		ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-		ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
+		ctx.clearRect(0, 0, this.canvas.clientWidth, this.canvas.clientHeight);
+		ctx.fillRect(0, 0, this.canvas.clientWidth, this.canvas.clientHeight);
+		//90° counterclockwise rotatation
+		if (!this.options.horizontal) {
+			ctx.translate(0, chartXlength / this._overSampleFactor);
+			ctx.rotate(-90 * Math.PI / 180);
+		}
 		// Compute y labels max width
 		let labelsMaxWidth = 0;
 		// For each data set...
@@ -340,20 +348,17 @@
 		}
 		if (labelsMaxWidth > 0)
 			labelsMaxWidth += 4;
-
 		// Scale factor for non real-time charts
-		const xScale = (canvasWidth - (labelsMaxWidth + this.options.axesWidth) * this._overSampleFactor) / (this._overSampleFactor * xMax);
-
+		const xScale = (chartXlength - (labelsMaxWidth + this.options.axesWidth) * this._overSampleFactor) / (this._overSampleFactor * xMax);
 		// X Y Axis
 		ctx.lineJoin = "round";
 		ctx.lineWidth = this.options.axesWidth;
 		ctx.strokeStyle = this.options.axesColor;
 		ctx.beginPath();
-		ctx.moveTo(canvasWidth / this._overSampleFactor, this.canvas.clientHeight - (ctx.lineWidth / 2) - xLabelSpace);
-		ctx.lineTo(labelsMaxWidth, this.canvas.clientHeight - (ctx.lineWidth / 2) - xLabelSpace);
+		ctx.moveTo(chartXlength / this._overSampleFactor, chartYLength - (ctx.lineWidth / 2) - xLabelSpace);
+		ctx.lineTo(labelsMaxWidth, chartYLength - (ctx.lineWidth / 2) - xLabelSpace);
 		ctx.lineTo(labelsMaxWidth, 0);
 		ctx.stroke();
-
 		// X grid
 		if (this.options.grid.x.enabled) {
 			let xPos = this.options.grid.x.stepSize;
@@ -361,13 +366,12 @@
 			ctx.strokeStyle = this.options.grid.x.color;
 			while (xMax - xPos > 0) {
 				ctx.beginPath();
-				ctx.moveTo((xPos * xScale) + labelsMaxWidth + this.options.axesWidth, this.canvas.clientHeight - (ctx.lineWidth / 2) - xLabelSpace);
+				ctx.moveTo((xPos * xScale) + labelsMaxWidth + this.options.axesWidth, chartYLength - (ctx.lineWidth / 2) - xLabelSpace);
 				ctx.lineTo((xPos * xScale) + labelsMaxWidth + this.options.axesWidth, 0);
 				ctx.stroke();
 				xPos += this.options.grid.x.stepSize;
 			}
 		}
-
 		// X Axis label
 		if (xLabelSpace > 0) {
 			const labelText = this.options.xAxis.xLabel;
@@ -375,8 +379,8 @@
 			ctx.fillStyle = this.options.xAxis.fontColor;
 			ctx.font = "bold " + this.options.xAxis.fontSize + 'px ' + this.options.xAxis.fontFamily;
 			ctx.fillText(labelText,
-				canvasWidth / (2 * this._overSampleFactor) - textWidth / 2,
-				this.canvas.clientHeight - xLabelSpace / 2 + this.options.xAxis.fontSize / 2
+				chartXlength / (2 * this._overSampleFactor) - textWidth / 2,
+				chartYLength - xLabelSpace / 2 + this.options.xAxis.fontSize / 2
 			);
 		}
 		// Y Axis labels and bars, for each data set...
@@ -385,7 +389,7 @@
 				continue;
 			const dataSet = timeSeries.data;
 			const position = timeSeries.position;
-			const barPaddedHeight = (canvasHeight - this.options.axesWidth - xLabelSpace) / seriesCount;
+			const barPaddedHeight = (chartYLength - this.options.axesWidth - xLabelSpace) / seriesCount;
 			const yBarPosition = Math.round(barPaddedHeight * (position - 1) + this.options.padding / 2);
 			const yCenteredPosition = Math.round(barPaddedHeight * (position - 1) + (barPaddedHeight / 2));
 			// Draw y labels on the chart.
@@ -398,43 +402,40 @@
 				ctx.font = "bold " + this.options.yLabels.fontSize + 'px ' + this.options.yLabels.fontFamily;
 				ctx.fillText(labelString, 0, yCenteredPosition);
 			}
-
 			// Y grid
 			if (this.options.grid.y.enabled && position > 1) {
 				ctx.lineWidth = 1;
 				ctx.strokeStyle = this.options.grid.y.color;
 				ctx.beginPath();
 				ctx.moveTo(labelsMaxWidth, yBarPosition - this.options.padding / 2);
-				ctx.lineTo(canvasWidth / this._overSampleFactor, yBarPosition - this.options.padding / 2);
+				ctx.lineTo(chartXlength / this._overSampleFactor, yBarPosition - this.options.padding / 2);
 				ctx.stroke();
 			}
-
 			// Draw bars
-			let lastXend = 0, lineEnd = 0;
+			let lastXend = 0, lineStart = 0, lineEnd = 0;
 			for (let i = 0; i < dataSet.length; i++) {
 				const value = dataSet[i].value;
 				if (i === 0) {
-					const lineStart = 0 + labelsMaxWidth + this.options.axesWidth;
+					lineStart = 0 + labelsMaxWidth + this.options.axesWidth;
 					lineEnd = (value / xUnitsPerPixel) + labelsMaxWidth + this.options.axesWidth;
 					if (!this.isRealTime)
 						lineEnd = (value * xScale) + labelsMaxWidth + this.options.axesWidth;
 					if (this.options.minBarLength > 0 && (lineEnd - lineStart) < this.options.minBarLength)
 						lineEnd = lineStart + this.options.minBarLength
-					this._drawBar(yBarPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 				} else {
-					const lineStart = lastXend;
+					lineStart = lastXend;
 					lineEnd = lineStart + (value / xUnitsPerPixel);
 					if (!this.isRealTime)
 						lineEnd = lineStart + (value * xScale);
 					if (this.options.minBarLength > 0 && (lineEnd - lineStart) < this.options.minBarLength)
 						lineEnd = lineStart + this.options.minBarLength
-					this._drawBar(yBarPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 				}
+				this._drawBar(yBarPosition, lineStart, lineEnd, dataSet[i], timeSeries.options);
 				lastXend = lineEnd;
 			}
 			// Delete old data that's moved off the left of the chart.
 			if (dataSet.length > 1 && this.isRealTime)
-				timeSeries._dropOldData(Math.floor(canvasWidth / this._overSampleFactor));
+				timeSeries._dropOldData(Math.floor(chartXlength / this._overSampleFactor));
 		}
 		// Periodic render
 		window.requestAnimationFrame((this._render.bind(this)));
@@ -451,8 +452,10 @@
 		dataSample.xEnd = xEnd;
 		dataSample.y = y;
 		//
-		if (xEnd > this.canvas.width / this._overSampleFactor)
-			return
+		if (this.options.horizontal && xEnd > this.canvas.width / this._overSampleFactor)
+			return;
+		if (!this.options.horizontal && xEnd > this.canvas.height / this._overSampleFactor)
+			return;
 		// bar
 		ctx.save();
 		let bar = new Path2D();
@@ -547,17 +550,29 @@
 	 */
 	HorizontalChart.prototype._updateTooltip = function (evt) {
 		let el = this._getTooltipEl();
+		const isPointInPath = (d, x, y, h) => {
+			const osf = this._overSampleFactor;
+			const ctx = this.canvas.getContext("2d");
+			if (h)
+				return ctx.isPointInPath(d.path2D, (x - d.xStart) * osf, (y - d.y) * osf);
+			else {
+				y = y - (this.canvas.height / osf);
+				x = x ^ y;
+				y = y ^ x;
+				x = x ^ y;
+				x = -x;
+				return ctx.isPointInPath(d.path2D, (y - d.y) * osf, this.canvas.height - (x - d.xStart) * osf);
+			}
+		};
 		if (!this.mouseover || !this.options.tooltip.enabled) {
 			el.style.display = 'none';
 			return;
 		}
-		const ctx = this.canvas.getContext("2d");
-		const osf = this._overSampleFactor;
 		let lines = [];
 		for (const s of this.seriesSet) {
 			for (const d of s.data) {
 				if (d.path2D != null) {
-					if (ctx.isPointInPath(d.path2D, (evt.offsetX - d.xStart) * osf, (evt.offsetY - d.y) * osf)) {
+					if (isPointInPath(d, evt.offsetX, evt.offsetY, this.options.horizontal)) {
 						let line = "";
 						if (d.desc.length > 0) {
 							line = "<span><b>" + d.desc + "</b></span>";

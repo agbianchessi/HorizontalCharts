@@ -3,6 +3,18 @@
 
 <head>
 	<title>Horizontal Chart example</title>
+	<style>
+		.column {
+			float: left;
+			width: 33.33%;
+		}
+
+		.row:after {
+			content: "";
+			display: table;
+			clear: both;
+		}
+	</style>
 	<script type="text/javascript" src="../horizontalcharts.js"></script>
 	<script type="text/javascript">
 		let colors = ["#FF6384", "#36A2EB", "#4BC0C0", "#FFFF66", "#FF99FF"];
@@ -15,13 +27,19 @@
 			ts1.append(new DataSample({ ts: new Date().getTime(), color: color, value: 2000 }));
 			//TimeSeries 2
 			color = colors[Math.floor(Math.random() * 5)];
-			ts2.append(new DataSample({ ts: new Date().getTime(), color: color, value: Math.random() * 10000 }));
+			ts2.append(new DataSample({ ts: new Date().getTime(), color: color, value: Math.random() * 5000 }));
 		}, 5000);
 		function createChart1() {
 			let defaultOptions = {};
 			let chart = new HorizontalChart(defaultOptions, true);
 			chart.addTimeSeries(ts1, ts2);
 			chart.streamTo(document.getElementById("chart1"));
+		}
+		function createChart4() {
+			let defaultOptions = { horizontal: false, xAxis: { xUnitsPerPixel: 20 } };
+			let chart = new HorizontalChart(defaultOptions, true);
+			chart.addTimeSeries(ts1, ts2);
+			chart.streamTo(document.getElementById("chart4"));
 		}
 		//
 		// Randomly add a data point every 5s
@@ -33,13 +51,19 @@
 			ts3.append(new DataSample({ color: color, value: Math.random() * 3000 }));
 			//TimeSeries 4
 			color = colors[Math.floor(Math.random() * 5)];
-			ts4.append(new DataSample({ color: color, value: Math.random() * 10000 }));
+			ts4.append(new DataSample({ color: color, value: Math.random() * 5000 }));
 		}, 5000);
 		function createChart2() {
 			let defaultOptions = {};
 			let chart = new HorizontalChart(defaultOptions, true);
 			chart.addTimeSeries(ts3, ts4);
 			chart.streamTo(document.getElementById("chart2"));
+		}
+		function createChart5() {
+			let defaultOptions = { horizontal: false, xAxis: { xUnitsPerPixel: 20 } };
+			let chart = new HorizontalChart(defaultOptions, true);
+			chart.addTimeSeries(ts3, ts4);
+			chart.streamTo(document.getElementById("chart5"));
 		}
 		//
 		let ts5 = new TimeSeries(1, { labelText: "Day 1" });
@@ -50,20 +74,17 @@
 			new DataSample({ color: '#BB0000', value: 30, desc: "John" }),
 			new DataSample({ color: '#880000', value: 10, desc: "Max" }),
 			new DataSample({ color: '#330000', value: 40, desc: "Ann" })
-
 		];
 		ts6.data = [
 			new DataSample({ color: '#0000FF', value: 10, desc: "Bob" }),
 			new DataSample({ color: '#0000BB', value: 50, desc: "John" }),
 			new DataSample({ color: '#000088', value: 20, desc: "Max" }),
 			new DataSample({ color: '#000033', value: 20, desc: "Ann" })
-
 		];
 		ts7.data = [
 			new DataSample({ color: '#00FF00', value: 10, desc: "Bob" }),
 			new DataSample({ color: '#00BB00', value: 40, desc: "John" }),
 			new DataSample({ color: '#008800', value: 15, desc: "Ann" })
-
 		];
 		function createChart3() {
 			let defaultOptions = { xAxis: { xLabel: "Percentage of completion" } };
@@ -71,13 +92,29 @@
 			chart.addTimeSeries(ts5, ts6, ts7);
 			chart.streamTo(document.getElementById("chart3"));
 		}
+		function createChart6() {
+			let defaultOptions = { horizontal: false, xAxis: { xUnitsPerPixel: 20, xLabel: "Percentage of completion" } };
+			let chart = new HorizontalChart(defaultOptions);
+			chart.addTimeSeries(ts5, ts6, ts7);
+			chart.streamTo(document.getElementById("chart6"));
+		}
 	</script>
 </head>
 
-<body onload="createChart1();createChart2();createChart3();">
-	<canvas id="chart1" style="width:100%;"></canvas>
-	<canvas id="chart2" style="width:100%; padding-top:5"></canvas>
-	<canvas id="chart3" style="width:100%; padding-top:5"></canvas>
+<body onload="createChart1();createChart2();createChart3();createChart4();createChart5();createChart6();">
+	<h1>Horizontal</h1>
+	<div class="row">
+		<canvas id="chart1" style="width:100%;"></canvas>
+		<canvas id="chart2" style="width:100%; padding-top:5"></canvas>
+		<canvas id="chart3" style="width:100%; padding-top:5"></canvas>
+	</div>
+	<h1>Vertical (<code>horizontal=false</code>)</h1>
+	<div class="row">
+		<div class="column"><canvas id="chart4" style="height:80vh;"></canvas></div>
+		<div class="column"><canvas id="chart5" style="height:80vh; padding:5"></canvas></div>
+		<div class="column"><canvas id="chart6" style="height:80vh; padding:5"></canvas></div>
+	</div>
+
 </body>
 
 </html>
