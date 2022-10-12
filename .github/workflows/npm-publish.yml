@@ -16,7 +16,6 @@ jobs:
         with:
           node-version: 16
           registry-url: https://registry.npmjs.org/
-      - run: npm ci
       - run: npx google-closure-compiler --js=horizontalcharts.js --js_output_file=horizontalcharts.min.js
       - run: npm publish
         env:
