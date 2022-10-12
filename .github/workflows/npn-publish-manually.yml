@@ -1,6 +1,6 @@
 # This workflow will publish a package to npm
 
-name: Publish Package to npmjs
+name: Manually publish Package to npmjs
 run-name: Publish Package to npm by @${{ github.actor }}
 
 on: workflow_dispatch
