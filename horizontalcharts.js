@@ -35,7 +35,10 @@
 			const height = horizontal ? canvas.height : canvas.clientHeight;
 			canvas.width = 0 | (width * factor);
 			canvas.height = 0 | (height * factor);
-			canvas.style.height = height + 'px';
+			if(horizontal)
+				canvas.style.height = height + 'px';
+			else
+				canvas.style.width = width + 'px';
 			canvas.getContext("2d").scale(factor, factor);
 		}
 	}
