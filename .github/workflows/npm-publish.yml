@@ -7,6 +7,8 @@ on:
   release:
     types: [created]
 
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -17,6 +19,7 @@ jobs:
           node-version: 16
           registry-url: https://registry.npmjs.org/
       - run: npx google-closure-compiler --js=horizontalcharts.js --js_output_file=horizontalcharts.min.js
+      - run: npx jsdoc horizontalcharts.js README.md --verbose -d docs
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
