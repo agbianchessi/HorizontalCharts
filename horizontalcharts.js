@@ -504,7 +504,7 @@
 	 * @private
 	 */
 	HorizontalChart.prototype._mousemove = function (evt) {
-		const cursor_offset = 16;
+		const cursor_offset = 16 / this._overSampleFactor;
 		this.mouseover = true;
 		if (!this.options.tooltip.enabled)
 			return;
