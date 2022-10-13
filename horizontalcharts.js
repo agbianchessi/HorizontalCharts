@@ -3,7 +3,7 @@
  * @copyright Andrea Giovanni Bianchessi 2022
  * @author Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com>
  * @license MIT
- * @version 1.2.3
+ * @version 1.2.4
  *
  * @module HorizontalCharts
  */
@@ -35,7 +35,7 @@
 			const height = horizontal ? canvas.height : canvas.clientHeight;
 			canvas.width = 0 | (width * factor);
 			canvas.height = 0 | (height * factor);
-			if(horizontal)
+			if (horizontal)
 				canvas.style.height = height + 'px';
 			else
 				canvas.style.width = width + 'px';
@@ -504,12 +504,13 @@
 	 * @private
 	 */
 	HorizontalChart.prototype._mousemove = function (evt) {
+		const cursor_offset = 16;
 		this.mouseover = true;
 		if (!this.options.tooltip.enabled)
 			return;
 		let el = this._getTooltipEl();
-		el.style.top = Math.round(evt.pageY) + 'px';
-		el.style.left = Math.round(evt.pageX) + 'px';
+		el.style.top = (cursor_offset + Math.round(evt.pageY)) + 'px';
+		el.style.left = (cursor_offset + Math.round(evt.pageX)) + 'px';
 		this._updateTooltip(evt);
 	};
 
