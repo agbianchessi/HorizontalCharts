@@ -3,7 +3,7 @@
  * @copyright Andrea Giovanni Bianchessi 2022
  * @author Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com>
  * @license MIT
- * @version 1.2.4
+ * @version 1.2.5
  *
  * @module HorizontalCharts
  */
@@ -11,24 +11,24 @@
 	'use strict';
 
 	const Util = {
-		merge: function () {
-			arguments[0] = arguments[0] || {};
-			for (let i = 1; i < arguments.length; i++) {
-				for (let key in arguments[i]) {
-					if (Object.hasOwn(arguments[i], key)) {
-						if (typeof (arguments[i][key]) === 'object') {
-							if (arguments[i][key] instanceof Array) {
-								arguments[0][key] = arguments[i][key];
+		merge: function (target, ...objs) {
+			target = target ?? {};
+			for (let i = 0; i < objs.length; i++) {
+				for (let key in objs[i]) {
+					if (Object.hasOwn(objs[i], key)) {
+						if (typeof (objs[i][key]) === 'object') {
+							if (objs[i][key] instanceof Array) {
+								target[key] = objs[i][key].slice(); //shallow copy
 							} else {
-								arguments[0][key] = Util.merge(arguments[0][key], arguments[i][key]);
+								target[key] = Util.merge(target[key], objs[i][key]);
 							}
 						} else {
-							arguments[0][key] = arguments[i][key];
+							target[key] = objs[i][key];
 						}
 					}
 				}
 			}
-			return arguments[0];
+			return target;
 		},
 		resizeCanvas: function (canvas, factor, horizontal) {
 			const width = horizontal ? canvas.clientWidth : canvas.width;
@@ -89,7 +89,7 @@
 	 * @property {string} [labelText=""] - A short text describing this <code>TimeSeries</code>.
 	 * @property {boolean} [replaceValue=false] - If data sample <code>ts</code> has an exact match in the series, this flag controls whether it is replaced, or not.
 	 * @property {boolean} [disabled=false] - This flag controls wheter this timeseries is displayed or not.
-	   */
+	 */
 	TimeSeries.defaultTimeSeriesOptions = {
 		barHeight: 25,
 		showValues: true,
@@ -265,12 +265,8 @@
 	 * @param {Canvas} canvas - The target canvas element.
 	 */
 	HorizontalChart.prototype.streamTo = function (canvas) {
-		// DataSet check
-		const valDataOk = this.seriesSet.every(s => s.data.every(
-			(d, i, arr) => i == 0 ? true : isNaN(arr[i].value) === isNaN(arr[i - 1].value)
-		));
-		if (!valDataOk)
-			throw new Error('Invalid DataSet!');
+		// DataSet validation
+		this._datasetValidation(this.seriesSet);
 		// Render on Canvas
 		this.canvas = canvas;
 		window.requestAnimationFrame((this._render.bind(this)));
@@ -279,6 +275,19 @@
 		this.canvas.addEventListener('mousemove', this._mousemove.bind(this));
 		this.canvas.addEventListener('mouseout', this._mouseout.bind(this));
 	};
+
+	/**
+	 * 
+	 * @private
+	 */
+	HorizontalChart.prototype._datasetValidation = function (seriesSet) {
+		const valDataOk = seriesSet.every(s => s.data.every(
+			(d, i, arr) => i == 0 ? true : isNaN(arr[i].value) === isNaN(arr[i - 1].value)
+		));
+		if (!valDataOk)
+			throw new Error('Invalid DataSet!');
+		return valDataOk;
+	}
 
 	/**
 	 * 
@@ -554,6 +563,10 @@
 	 */
 	HorizontalChart.prototype._updateTooltip = function (evt) {
 		let el = this._getTooltipEl();
+		if (!this.mouseover || !this.options.tooltip.enabled) {
+			el.style.display = 'none';
+			return;
+		}
 		const isPointInPath = (d, x, y, h) => {
 			const osf = this._overSampleFactor;
 			const ctx = this.canvas.getContext("2d");
@@ -568,10 +581,6 @@
 				return ctx.isPointInPath(d.path2D, (y - d.y) * osf, this.canvas.height - (x - d.xStart) * osf);
 			}
 		};
-		if (!this.mouseover || !this.options.tooltip.enabled) {
-			el.style.display = 'none';
-			return;
-		}
 		let lines = [];
 		for (const s of this.seriesSet) {
 			for (const d of s.data) {
