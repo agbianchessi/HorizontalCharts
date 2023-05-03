@@ -1,7 +1,7 @@
 # HorizontalCharts
 *HorizontalCharts* is a small JavaScript charting library with built-in live streaming feature.
 
-![chart](https://user-images.githubusercontent.com/5993480/138280570-0c7d3c0f-7671-4ae1-b5d4-fa89e587165e.png)
+![Cattura](https://user-images.githubusercontent.com/5993480/235872148-773a5138-ed42-49c1-8033-6d8dbb96fa22.PNG)
 
 ---
 
