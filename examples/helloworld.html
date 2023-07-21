@@ -110,7 +110,7 @@
 			new DataSample({ color: '#008800', value: 15, desc: "Ann" })
 		];
 		function createChart3() {
-			let defaultOptions = { xAxis: { xLabel: "Percentage of completion" } };
+			let defaultOptions = { grid: {x: {enabled: true, showLabels: true, stepSize: 10, color:"#aaaaaa"}}, xAxis: { xLabel: "Percentage of completion" } };
 			let chart = new HorizontalChart(defaultOptions);
 			chart.addTimeSeries(ts5, ts6, ts7);
 			chart.streamTo(document.getElementById("chart3"));

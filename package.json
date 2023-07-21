@@ -1,6 +1,7 @@
 {
   "name": "horizontalcharts",
-  "version": "1.2.5",
+  "version": "1.2.6",
+  "private": false,
   "author": "Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com> (https://www.horizontalcharts.org)",
   "description": "Horizontal Charts: horizontal JavaScript bar charts",
   "main": "horizontalcharts.js",
@@ -12,6 +13,7 @@
     "type": "git",
     "url": "git+https://github.com/agbianchessi/HorizontalCharts.git"
   },
+  "funding": "https://paypal.me/andreagbianchessi",
   "keywords": [
     "charts",
     "charting",

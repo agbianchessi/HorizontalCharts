@@ -1,9 +1,9 @@
 /** 
  * For all details and documentation: {@link https://www.horizontalcharts.org|www.horizontalcharts.org}
- * @copyright Andrea Giovanni Bianchessi 2022
+ * @copyright Andrea Giovanni Bianchessi 2023
  * @author Andrea Giovanni Bianchessi <andrea.g.bianchessi@gmail.com>
  * @license MIT
- * @version 1.2.5
+ * @version 1.2.6
  *
  * @module HorizontalCharts
  */
@@ -40,6 +40,14 @@
 			else
 				canvas.style.width = width + 'px';
 			canvas.getContext("2d").scale(factor, factor);
+		},
+		getTextLineHeight: function (ctx, fontSize, fontFamily) {
+			ctx.save();
+			ctx.font = fontSize + 'px ' + fontFamily;
+			const metrics = ctx.measureText('AgB');
+			const fontHeight = metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent;
+			ctx.restore();
+			return fontHeight;
 		}
 	}
 
@@ -189,6 +197,9 @@
 	 * @property {boolean} [grid.x.enabled=false] - If true X grid axis are shown.
 	 * @property {number} [grid.x.stepSize=20] - X grid axis step size.
 	 * @property {string} [grid.x.color="#000000"] - X grid axis color. 
+	 * @property {boolean} [grid.x.showLabels=false] - If true X grid labels are shown.
+	 * @property {number} [grid.x.fontSize=10] - Font size of the X grid labels.
+	 * @property {string} [grid.x.fontFamily="monospace"] - Font family of the X grid labels.
 	 * @property {Object} [tooltip] - Tooltip options.
 	 * @property {boolean} [tooltip.enabled=true] - If true tooltips are shown.
 	 * @property {string} [tooltip.backgroundColor="#FFFFFFDD"] - Tooltips backround color.
@@ -226,7 +237,10 @@
 			x: {
 				enabled: false,
 				stepSize: 20,
-				color: '#000000'
+				color: '#000000',
+				showLabels: false,
+				fontSize: 10,
+				fontFamily: 'monospace'
 			}
 		},
 		tooltip: {
@@ -293,7 +307,7 @@
 	 * 
 	 * @private
 	 */
-	HorizontalChart.prototype._render = function () {
+	HorizontalChart.prototype._render = function (tFrame) {
 		const xUnitsPerPixel = this.options.xAxis.xUnitsPerPixel;
 		const xMax = this.options.xAxis.max;
 		const ctx = this.canvas.getContext("2d");
@@ -314,9 +328,17 @@
 		//X Axis labels space
 		let xLabelSpace = 0;
 		if (typeof this.options.xAxis.xLabel === "string" && this.options.xAxis.xLabel.length > 0) {
-			xLabelSpace = this.options.xAxis.fontSize + 5;
+			xLabelSpace = Util.getTextLineHeight(ctx, this.options.xAxis.fontSize, this.options.xAxis.fontFamily) + 4;
 			chartYLength += xLabelSpace;
 		}
+		//X Axis ticks space
+		let xTicksSpace = 0;
+		if(this.options.grid.x.showLabels){
+			xTicksSpace = Util.getTextLineHeight(ctx, this.options.grid.x.fontSize, this.options.grid.x.fontFamily) + 4;
+			chartYLength += xTicksSpace;
+		}
+		// X Axis labels space + X Axis ticks space
+		const xTicksLabelSpace = xLabelSpace + xTicksSpace;
 		// Resize canvas
 		if (this.options.horizontal) {
 			this.canvas.style.height = chartYLength + "px";
@@ -367,8 +389,8 @@
 		ctx.lineWidth = this.options.axesWidth;
 		ctx.strokeStyle = this.options.axesColor;
 		ctx.beginPath();
-		ctx.moveTo(chartXlength / this._overSampleFactor, chartYLength - (ctx.lineWidth / 2) - xLabelSpace);
-		ctx.lineTo(labelsMaxWidth, chartYLength - (ctx.lineWidth / 2) - xLabelSpace);
+		ctx.moveTo(chartXlength / this._overSampleFactor, chartYLength - (ctx.lineWidth / 2) - xTicksLabelSpace);
+		ctx.lineTo(labelsMaxWidth, chartYLength - (ctx.lineWidth / 2) - xTicksLabelSpace);
 		ctx.lineTo(labelsMaxWidth, 0);
 		ctx.stroke();
 		// X grid
@@ -376,11 +398,23 @@
 			let xPos = this.options.grid.x.stepSize;
 			ctx.lineWidth = 1;
 			ctx.strokeStyle = this.options.grid.x.color;
+			let tickCounter = 0;
 			while (xMax - xPos > 0) {
+				tickCounter++;
 				ctx.beginPath();
-				ctx.moveTo((xPos * xScale) + labelsMaxWidth + this.options.axesWidth, chartYLength - (ctx.lineWidth / 2) - xLabelSpace);
+				ctx.moveTo((xPos * xScale) + labelsMaxWidth + this.options.axesWidth, chartYLength - xTicksLabelSpace - this.options.axesWidth);
 				ctx.lineTo((xPos * xScale) + labelsMaxWidth + this.options.axesWidth, 0);
 				ctx.stroke();
+				//Ticks text
+				const tickText = (tickCounter*this.options.grid.x.stepSize).toString();
+				ctx.fillStyle = this.options.xAxis.fontColor;
+				ctx.font = this.options.grid.x.fontSize + 'px ' + this.options.grid.x.fontFamily;
+				const textWidth = Math.ceil(ctx.measureText(tickText).width);
+				ctx.fillText(tickText, 
+					(xPos * xScale) + labelsMaxWidth + this.options.axesWidth - (textWidth/2), 
+					chartYLength - xTicksLabelSpace + (xTicksSpace / 2)
+				);
+				//
 				xPos += this.options.grid.x.stepSize;
 			}
 		}
@@ -392,7 +426,7 @@
 			ctx.font = "bold " + this.options.xAxis.fontSize + 'px ' + this.options.xAxis.fontFamily;
 			ctx.fillText(labelText,
 				chartXlength / (2 * this._overSampleFactor) - textWidth / 2,
-				chartYLength - xLabelSpace / 2 + this.options.xAxis.fontSize / 2
+				chartYLength - (xLabelSpace / 2)
 			);
 		}
 		// Y Axis labels and bars, for each data set...
@@ -401,9 +435,9 @@
 				continue;
 			const dataSet = timeSeries.data;
 			const position = timeSeries.position;
-			const barPaddedHeight = (chartYLength - this.options.axesWidth - xLabelSpace) / seriesCount;
-			const yBarPosition = Math.round(barPaddedHeight * (position - 1) + this.options.padding / 2);
-			const yCenteredPosition = Math.round(barPaddedHeight * (position - 1) + (barPaddedHeight / 2));
+			const barPaddedHeight = (chartYLength - this.options.axesWidth - xTicksLabelSpace) / seriesCount;
+			const yBarPosition = (barPaddedHeight * (position - 1) + this.options.padding / 2);
+			const yCenteredPosition = barPaddedHeight * (position - 1) + (barPaddedHeight / 2);
 			// Draw y labels on the chart.
 			if (this.options.yLabels.enabled) {
 				const labelString = timeSeries.options.labelText.length > 0
@@ -470,14 +504,19 @@
 			return;
 		// bar
 		ctx.save();
+		//fill
 		let bar = new Path2D();
-		ctx.translate(Math.round(xStart), Math.round(y)); // Aligns the bar starting point to the pattern starting point
-		bar.rect(0, 0, Math.round(xEnd) - Math.round(xStart), Math.round(tsOptions.barHeight));
+		ctx.translate(xStart, y); // Aligns the bar starting point to the pattern starting point
+		bar.rect(0, 0, xEnd - xStart, tsOptions.barHeight);
 		ctx.fillStyle = dataSample.color;
+		ctx.fill(bar);
+		//border
+		let barBorder = new Path2D();
 		ctx.lineWidth = dataSample.borderWidth > 0 ? dataSample.borderWidth : 1;
 		ctx.strokeStyle = dataSample.borderWidth > 0 ? dataSample.borderColor : dataSample.color;
-		ctx.fill(bar);
-		ctx.stroke(bar);
+		barBorder.rect(0, 0, xEnd - xStart, tsOptions.barHeight);
+		ctx.stroke(barBorder);
+		//
 		dataSample.path2D = bar;
 		ctx.restore();
 		// Print value
@@ -490,8 +529,14 @@
 				ctx.lineWidth = 1;
 				ctx.fillStyle = "#FFFFFF";
 				ctx.strokeStyle = 'black';
-				ctx.fillText(valueString, Math.round(xStart + ((xEnd - xStart) / 2) - (textWidth / 2)), y + fontSize);
-				ctx.strokeText(valueString, Math.round(xStart + ((xEnd - xStart) / 2) - (textWidth / 2)), y + fontSize);
+				ctx.fillText(valueString, 
+					xStart + ((xEnd - xStart) / 2) - (textWidth / 2), 
+					y + tsOptions.barHeight/2 + Util.getTextLineHeight(ctx, fontSize, 'monospace')/4
+				);
+				ctx.strokeText(valueString, 
+					xStart + ((xEnd - xStart) / 2) - (textWidth / 2), 
+					y + tsOptions.barHeight/2 + Util.getTextLineHeight(ctx, fontSize, 'monospace')/4
+				);
 			}
 		}
 	}
@@ -518,8 +563,8 @@
 		if (!this.options.tooltip.enabled)
 			return;
 		let el = this._getTooltipEl();
-		el.style.top = (cursor_offset + Math.round(evt.pageY)) + 'px';
-		el.style.left = (cursor_offset + Math.round(evt.pageX)) + 'px';
+		el.style.top = (cursor_offset + evt.pageY) + 'px';
+		el.style.left = (cursor_offset + evt.pageX) + 'px';
 		this._updateTooltip(evt);
 	};
 
